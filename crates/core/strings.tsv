@@ -200,5 +200,14 @@ set.vertical_margin	Vertical margin	Вертикальный отступ
 set.warn	Warning from	Предупреждение от
 set.yes	Yes	Да
 set.zero_auto	0 = automatic	0 = авто
-set.source.busiest_gpu	Busiest GPU right now	Самая загруженная GPU
 set.source.gpu_hint	Empty = GPU with the most video memory (on laptops usually the discrete one, 0% while idle); * = busiest GPU.	Пусто = GPU с наибольшей видеопамятью (на ноутбуке обычно дискретная, в простое 0%); * = самая загруженная GPU.
+gpu.main	Most powerful GPU (or the chosen one)	Самая мощная GPU (или выбранная)
+gpu.busiest	Busiest GPU right now	Самая загруженная GPU
+gpu.all	All GPUs (a tile for each)	Все GPU (плитка на каждую)
+menu.gpu	GPU	GPU
+set.hw.gpu_display	Show GPUs	Показывать GPU
+set.hw.gpu_most_memory	Automatic: most video memory	Авто: больше всего видеопамяти
+set.hw.gpu_diag	GPU diagnostics	Диагностика GPU
+set.hw.copy_diag	Copy diagnostics	Скопировать диагностику
+set.hw.copied	Copied to clipboard	Скопировано в буфер обмена
+set.hw.refresh	Refresh	Обновить

@@ -31,6 +31,8 @@ pub enum FlyoutButton {
 
 pub struct FlyoutData<'a> {
     pub settings: &'a Settings,
+    /// Effective metrics (GPU tiles expanded), parallel to `readings`.
+    pub metrics: &'a [MetricConfig],
     pub readings: &'a [Reading],
     pub histories: &'a HashMap<String, History>,
     pub snapshot: &'a Snapshot,
@@ -134,7 +136,6 @@ impl Flyout {
         let footer_h = (24.0 * s).round();
 
         let items: Vec<usize> = data
-            .settings
             .metrics
             .iter()
             .enumerate()
@@ -209,7 +210,7 @@ impl Flyout {
                 let (col, row) = (n % cols, n / cols);
                 let x = bx + pad + col as f32 * (card_w + gap);
                 let y = by + pad + header_h + row as f32 * (card_h + gap);
-                let config = &data.settings.metrics[i];
+                let config = &data.metrics[i];
                 let reading = &data.readings[i];
                 let history = data.histories.get(&history_key(config));
                 draw_card(

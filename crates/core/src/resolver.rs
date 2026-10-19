@@ -1,9 +1,9 @@
 //! Evaluates a [`MetricConfig`] against a [`Snapshot`].
 
 use crate::claude::{ClaudeLimit, ClaudeStatus, ClaudeUsage};
-use crate::config::{MetricConfig, NetworkUnit, Settings};
+use crate::config::{GpuDisplay, Hardware, MetricConfig, NetworkUnit, Settings};
 use crate::format;
-use crate::metrics::MetricKind;
+use crate::metrics::{MetricKind, SourceType};
 use crate::snapshot::{DiskInfo, GpuInfo, Snapshot};
 use crate::time::now_unix;
 
@@ -106,7 +106,7 @@ pub fn label(config: &MetricConfig, snap: &Snapshot) -> String {
 pub fn resolve(config: &MetricConfig, snap: &Snapshot, settings: &Settings) -> Reading {
     let label = label(config, snap);
     let dec = config.decimals;
-    let gpu_default = settings.hardware.gpu_adapter.as_str();
+    let hw = &settings.hardware;
 
     match config.kind {
         MetricKind::CpuUsage => match snap.cpu_usage {
@@ -127,11 +127,11 @@ pub fn resolve(config: &MetricConfig, snap: &Snapshot, settings: &Settings) -> R
                 format::bytes(snap.ram_total as f64, -1)
             ))
         }
-        MetricKind::GpuUsage => match select_gpu(snap, &config.source, gpu_default) {
+        MetricKind::GpuUsage => match select_gpu(snap, &config.source, hw) {
             Some(GpuInfo { usage: Some(u), name, .. }) => Reading::percent(label, *u, dec, Some(name.clone())),
             _ => Reading::unavailable(label, None),
         },
-        MetricKind::GpuTemp => match select_gpu(snap, &config.source, gpu_default) {
+        MetricKind::GpuTemp => match select_gpu(snap, &config.source, hw) {
             Some(GpuInfo { temperature: Some(t), name, fan_rpm, .. }) => {
                 let r = Reading::temperature(label, *t, dec, Some(name.clone()));
                 match fan_rpm {
@@ -141,7 +141,7 @@ pub fn resolve(config: &MetricConfig, snap: &Snapshot, settings: &Settings) -> R
             }
             _ => Reading::unavailable(label, Some("status.no_sensor")),
         },
-        MetricKind::VramUsage => match select_gpu(snap, &config.source, gpu_default) {
+        MetricKind::VramUsage => match select_gpu(snap, &config.source, hw) {
             Some(g) if g.vram_total > 0 => {
                 Reading::percent(label, 100.0 * g.vram_used as f64 / g.vram_total as f64, dec, Some(g.name.clone())).with_detail(
                     format!("{} / {}", format::bytes(g.vram_used as f64, -1), format::bytes(g.vram_total as f64, -1)),
@@ -249,27 +249,56 @@ fn claude_reading(label: String, usage: &ClaudeUsage, limit: Option<&ClaudeLimit
     r
 }
 
-/// `source` / `default_adapter`: GPU name substring or LUID; `*` = the busiest GPU right now
-/// (useful on laptops where the integrated and discrete GPUs take turns). Empty = default adapter.
-pub fn select_gpu<'a>(snap: &'a Snapshot, source: &str, default_adapter: &str) -> Option<&'a GpuInfo> {
-    for selector in [source.trim(), default_adapter.trim()] {
-        if selector.is_empty() {
+/// GPU for a metric. `source`: GPU name substring or LUID, `*` = busiest; empty = per `hw.gpu_display`
+/// (`all` is expanded into explicit sources by [`expand_metrics`] beforehand).
+pub fn select_gpu<'a>(snap: &'a Snapshot, source: &str, hw: &Hardware) -> Option<&'a GpuInfo> {
+    let busiest = || {
+        snap.gpus
+            .iter()
+            .max_by(|a, b| a.usage.unwrap_or(0.0).total_cmp(&b.usage.unwrap_or(0.0)).then(a.vram_used.cmp(&b.vram_used)))
+    };
+    let main =
+        || find_gpu(snap, &hw.gpu_adapter).or_else(|| snap.gpus.iter().find(|g| g.is_default)).or_else(|| snap.gpus.first());
+    match source.trim() {
+        "*" => busiest(),
+        "" if hw.gpu_display == GpuDisplay::Busiest => busiest(),
+        "" => main(),
+        selector => find_gpu(snap, selector).or_else(main),
+    }
+}
+
+fn find_gpu<'a>(snap: &'a Snapshot, selector: &str) -> Option<&'a GpuInfo> {
+    let selector = selector.trim();
+    if selector.is_empty() {
+        return None;
+    }
+    let needle = selector.to_lowercase();
+    snap.gpus
+        .iter()
+        .find(|g| g.luid.eq_ignore_ascii_case(selector))
+        .or_else(|| snap.gpus.iter().find(|g| g.name.to_lowercase().contains(&needle)))
+}
+
+/// With `gpu_display = all`, every GPU metric without an explicit source becomes one tile per GPU
+/// (labelled `GPU1`, `VRAM2`…, most video memory first). Other metrics are returned unchanged.
+pub fn expand_metrics(metrics: &[MetricConfig], snap: &Snapshot, hw: &Hardware) -> Vec<MetricConfig> {
+    let mut gpus: Vec<&GpuInfo> = snap.gpus.iter().filter(|g| g.listed).collect();
+    gpus.sort_by_key(|g| std::cmp::Reverse(g.vram_total));
+    if hw.gpu_display != GpuDisplay::All || gpus.len() < 2 {
+        return metrics.to_vec();
+    }
+    let mut out = Vec::with_capacity(metrics.len() + gpus.len());
+    for m in metrics {
+        if m.kind.def().source_type != SourceType::Gpu || !m.source.trim().is_empty() {
+            out.push(m.clone());
             continue;
         }
-        if selector == "*" {
-            return snap
-                .gpus
-                .iter()
-                .max_by(|a, b| a.usage.unwrap_or(0.0).total_cmp(&b.usage.unwrap_or(0.0)).then(a.vram_used.cmp(&b.vram_used)));
-        }
-        let needle = selector.to_lowercase();
-        if let Some(g) =
-            snap.gpus.iter().find(|g| g.name.to_lowercase().contains(&needle) || g.luid.eq_ignore_ascii_case(selector))
-        {
-            return Some(g);
+        let base = if m.label.is_empty() { m.kind.def().default_label.to_string() } else { m.label.clone() };
+        for (i, g) in gpus.iter().enumerate() {
+            out.push(MetricConfig { source: g.luid.clone(), label: format!("{base}{}", i + 1), ..m.clone() });
         }
     }
-    snap.gpus.iter().find(|g| g.is_default).or_else(|| snap.gpus.first())
+    out
 }
 
 /// Empty source = physical adapters (avoids double counting virtual switches and VPNs), `*` = all,
@@ -350,6 +379,7 @@ mod tests {
                     luid: "a".into(),
                     usage: Some(1.0),
                     vram_total: 128 << 20,
+                    listed: true,
                     ..Default::default()
                 },
                 GpuInfo {
@@ -359,6 +389,7 @@ mod tests {
                     vram_used: 4 << 30,
                     vram_total: 16 << 30,
                     is_default: true,
+                    listed: true,
                     ..Default::default()
                 },
             ],
@@ -401,6 +432,28 @@ mod tests {
         sn.gpus[0].usage = Some(80.0);
         assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage).with_source("*"), &sn, &s).value, 80.0);
         assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage), &sn, &s).value, 50.0, "default stays on the default GPU");
+        let busiest =
+            Settings { hardware: Hardware { gpu_display: GpuDisplay::Busiest, ..Hardware::default() }, ..Settings::default() };
+        assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage), &sn, &busiest).value, 80.0);
+    }
+
+    #[test]
+    fn all_gpus_expand_into_one_tile_each() {
+        let sn = snap();
+        let hw = Hardware { gpu_display: GpuDisplay::All, ..Hardware::default() };
+        let metrics = vec![
+            MetricConfig::new(MetricKind::CpuUsage),
+            MetricConfig::new(MetricKind::GpuUsage),
+            MetricConfig::new(MetricKind::VramUsage).with_source("intel"),
+        ];
+        let out = expand_metrics(&metrics, &sn, &hw);
+        let labels: Vec<_> = out.iter().map(|m| m.label.as_str()).collect();
+        assert_eq!(labels, ["", "GPU1", "GPU2", ""]);
+        assert_eq!(out[1].source, "b", "most video memory first");
+        let s = Settings { hardware: hw, ..Settings::default() };
+        assert_eq!(resolve(&out[1], &sn, &s).value, 50.0);
+        assert_eq!(resolve(&out[2], &sn, &s).value, 1.0);
+        assert_eq!(expand_metrics(&metrics, &sn, &Hardware::default()).len(), 3, "main mode leaves metrics alone");
     }
 
     #[test]

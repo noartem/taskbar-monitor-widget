@@ -12,8 +12,8 @@ use eframe::egui::{self, Color32, ComboBox, DragValue, RichText, ScrollArea, Sli
 use tm_core::claude::{ClaudeStatus, ClaudeUsage, resolve_credentials_path};
 use tm_core::color::Rgba;
 use tm_core::config::{
-    self, AppPaths, Autostart, ClickAction, EmbedMode, MetricConfig, MonitorMode, NetworkUnit, Placement, Settings, ThemeMode,
-    TrayIconMode,
+    self, AppPaths, Autostart, ClickAction, EmbedMode, GpuDisplay, MetricConfig, MonitorMode, NetworkUnit, Placement, Settings,
+    ThemeMode, TrayIconMode,
 };
 use tm_core::i18n::{self, tr, trf};
 use tm_core::metrics::{MetricKind, MetricStyle, SourceType};
@@ -61,10 +61,70 @@ impl Section {
 #[derive(Default, Clone)]
 struct Sources {
     gpus: Vec<String>,
+    gpu_diag: GpuDiag,
     networks: Vec<(String, String)>,
     disks: Vec<String>,
     drives: Vec<String>,
     sensors: Vec<(String, String)>,
+}
+
+/// What the widget's GPU pipeline sees: DXGI adapters, raw counter instances and the merged result.
+#[derive(Default, Clone)]
+struct GpuDiag {
+    rows: Vec<tm_core::snapshot::GpuInfo>,
+    text: String,
+}
+
+fn gpu_diagnostics() -> GpuDiag {
+    let adapters = collector::gpu::adapters();
+    let mut text = String::from("DXGI adapters:\n");
+    for a in &adapters {
+        text += &format!("  {} [{}] {} MB\n", a.name, a.luid_str, a.dedicated >> 20);
+    }
+    let Some(pdh) = collector::pdh::Pdh::open(collector::pdh::PdhNeeds { gpu: true, ..Default::default() }) else {
+        text += "PDH query could not be opened\n";
+        return GpuDiag { rows: Vec::new(), text };
+    };
+    // Utilization is a rate counter: it needs two samples.
+    pdh.collect();
+    std::thread::sleep(Duration::from_millis(1000));
+    pdh.collect();
+    let (engine, memory) = pdh.gpu_raw();
+    match &engine {
+        Some(e) => {
+            text += &format!("GPU Engine instances: {}\n", e.len());
+            for (name, v) in e.iter().filter(|(_, v)| *v > 0.0).take(5) {
+                text += &format!("  {name} = {v:.1}\n");
+            }
+        }
+        None => text += "GPU Engine counter: unavailable\n",
+    }
+    match &memory {
+        Some(m) => {
+            text += &format!("GPU Adapter Memory instances: {}\n", m.len());
+            for (name, v) in m.iter().take(8) {
+                text += &format!("  {name} = {} MB\n", *v as u64 >> 20);
+            }
+        }
+        None => text += "GPU Adapter Memory counter: unavailable\n",
+    }
+    let usage = pdh.gpu_usage();
+    let dedicated = pdh.gpu_dedicated();
+    let rows = collector::merge_gpus(&adapters, usage.as_ref(), dedicated.as_ref(), &std::collections::HashMap::new());
+    text += "Result:\n";
+    for g in &rows {
+        text += &format!(
+            "  {} [{}] load={:?} vram={} / {} MB default={} listed={}\n",
+            g.name,
+            g.luid,
+            g.usage.map(|u| (u * 10.0).round() / 10.0),
+            g.vram_used >> 20,
+            g.vram_total >> 20,
+            g.is_default,
+            g.listed
+        );
+    }
+    GpuDiag { rows, text }
 }
 
 fn enumerate_sources() -> Sources {
@@ -76,6 +136,7 @@ fn enumerate_sources() -> Sources {
         gpus: collector::gpu::adapters().into_iter().map(|a| a.name).collect(),
         networks: collector::network::interfaces().into_iter().map(|i| (i.name, i.description)).collect(),
         drives: collector::system::drives().into_iter().map(|d| d.name).collect(),
+        gpu_diag: gpu_diagnostics(),
         ..Default::default()
     };
     if let Some(pdh) = collector::pdh::Pdh::open(collector::pdh::PdhNeeds { disk: true, ..Default::default() }) {
@@ -830,21 +891,71 @@ impl SettingsApp {
             ui.add(Slider::new(&mut h.sensor_interval_ms, 500..=10_000).suffix(" ms").step_by(250.0));
             ui.end_row();
 
-            ui.label(tr("set.hw.gpu"));
-            let label = match h.gpu_adapter.as_str() {
-                "" => tr("set.auto").to_string(),
-                "*" => tr("set.source.busiest_gpu").to_string(),
-                other => other.to_string(),
-            };
-            ComboBox::from_id_salt("gpu_default").width(320.0).selected_text(label).show_ui(ui, |ui| {
-                ui.selectable_value(&mut h.gpu_adapter, String::new(), tr("set.auto"));
-                ui.selectable_value(&mut h.gpu_adapter, "*".to_string(), tr("set.source.busiest_gpu"));
-                for g in sources.iter().flat_map(|s| s.gpus.iter()) {
-                    ui.selectable_value(&mut h.gpu_adapter, g.clone(), g);
+            ui.label(tr("set.hw.gpu_display"));
+            ui.vertical(|ui| {
+                for mode in GpuDisplay::ALL {
+                    ui.radio_value(&mut h.gpu_display, mode, tr(mode.key()));
                 }
             });
             ui.end_row();
+
+            if h.gpu_display == GpuDisplay::Main {
+                ui.label(tr("set.hw.gpu"));
+                let label =
+                    if h.gpu_adapter.is_empty() { tr("set.hw.gpu_most_memory").to_string() } else { h.gpu_adapter.clone() };
+                ComboBox::from_id_salt("gpu_default").width(320.0).selected_text(label).show_ui(ui, |ui| {
+                    ui.selectable_value(&mut h.gpu_adapter, String::new(), tr("set.hw.gpu_most_memory"));
+                    for g in sources.iter().flat_map(|s| s.gpus.iter()) {
+                        ui.selectable_value(&mut h.gpu_adapter, g.clone(), g);
+                    }
+                });
+                ui.end_row();
+            }
         });
+
+        ui.add_space(10.0);
+        ui.heading(tr("set.hw.gpu_diag"));
+        match &sources {
+            None => {
+                ui.spinner();
+            }
+            Some(s) => {
+                egui::Grid::new("gpu_diag").striped(true).num_columns(4).spacing([16.0, 4.0]).show(ui, |ui| {
+                    ui.strong("GPU");
+                    ui.strong(tr("kind.gpu_usage"));
+                    ui.strong("VRAM");
+                    ui.strong("LUID");
+                    ui.end_row();
+                    for g in &s.gpu_diag.rows {
+                        let name = if g.is_default { format!("★ {}", g.name) } else { g.name.clone() };
+                        ui.label(name);
+                        ui.label(g.usage.map(|u| format!("{u:.0}%")).unwrap_or_else(|| "—".into()));
+                        ui.label(if g.vram_total > 0 {
+                            format!("{} / {} MB", g.vram_used >> 20, g.vram_total >> 20)
+                        } else {
+                            format!("{} MB", g.vram_used >> 20)
+                        });
+                        ui.monospace(&g.luid);
+                        ui.end_row();
+                    }
+                });
+                ui.horizontal(|ui| {
+                    if ui.button(tr("set.hw.copy_diag")).clicked() {
+                        ui.ctx().copy_text(s.gpu_diag.text.clone());
+                        self.flash(tr("set.hw.copied"));
+                    }
+                    if ui.button(tr("set.hw.refresh")).clicked() {
+                        *self.sources.lock().unwrap() = None;
+                        let sources = self.sources.clone();
+                        let ctx = ui.ctx().clone();
+                        std::thread::spawn(move || {
+                            *sources.lock().unwrap() = Some(enumerate_sources());
+                            ctx.request_repaint();
+                        });
+                    }
+                });
+            }
+        }
 
         ui.add_space(10.0);
         ui.heading(tr("set.hw.detected"));
@@ -935,7 +1046,7 @@ impl SettingsApp {
 
 fn source_picker(ui: &mut egui::Ui, m: &mut MetricConfig, source_type: SourceType, sources: Option<&Sources>) {
     let options: Vec<(String, String)> = match (source_type, sources) {
-        (SourceType::Gpu, Some(s)) => std::iter::once(("*".to_string(), tr("set.source.busiest_gpu").to_string()))
+        (SourceType::Gpu, Some(s)) => std::iter::once(("*".to_string(), tr("gpu.busiest").to_string()))
             .chain(s.gpus.iter().map(|g| (g.clone(), g.clone())))
             .collect(),
         (SourceType::Network, Some(s)) => std::iter::once(("*".to_string(), tr("set.source.all_adapters").to_string()))

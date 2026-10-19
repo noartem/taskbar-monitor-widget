@@ -33,6 +33,8 @@ pub struct GpuInfo {
     pub fan_rpm: Option<u32>,
     /// Adapter with the most dedicated memory.
     pub is_default: bool,
+    /// Reported by DXGI (a real adapter with a name), not only seen in performance counters.
+    pub listed: bool,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]

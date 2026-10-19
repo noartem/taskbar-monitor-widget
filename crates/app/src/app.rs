@@ -6,7 +6,7 @@ use std::collections::HashMap;
 use std::time::{Duration, Instant, SystemTime};
 
 use tm_core::color::Palette;
-use tm_core::config::{self, AppPaths, Autostart, ClickAction, LoadOutcome, Settings, TrayIconMode};
+use tm_core::config::{self, AppPaths, Autostart, ClickAction, GpuDisplay, LoadOutcome, MetricConfig, Settings, TrayIconMode};
 use tm_core::history::History;
 use tm_core::i18n::{self, tr, trf};
 use tm_core::metrics::DataSources;
@@ -90,6 +90,8 @@ struct App {
     palette: Palette,
     collector: Collector,
     snapshot: Snapshot,
+    /// `settings.metrics` with "all GPUs" expanded; `readings` is parallel to it.
+    metrics: Vec<MetricConfig>,
     readings: Vec<Reading>,
     histories: HashMap<String, History>,
     widgets: Vec<Widget>,
@@ -250,6 +252,7 @@ impl App {
             palette,
             collector,
             snapshot: Snapshot::default(),
+            metrics: Vec::new(),
             readings: Vec::new(),
             histories: HashMap::new(),
             widgets: Vec::new(),
@@ -363,7 +366,7 @@ impl App {
                 self.recompute_readings();
                 let cap = self.settings.general.history_length as usize;
                 let mut pushed = std::collections::HashSet::new();
-                for (m, r) in self.settings.metrics.iter().zip(&self.readings) {
+                for (m, r) in self.metrics.iter().zip(&self.readings) {
                     let key = flyout::history_key(m);
                     if pushed.insert(key.clone()) {
                         self.histories.entry(key).or_insert_with(|| History::new(cap)).push(r.value);
@@ -380,7 +383,8 @@ impl App {
     }
 
     fn recompute_readings(&mut self) {
-        self.readings = self.settings.metrics.iter().map(|m| resolver::resolve(m, &self.snapshot, &self.settings)).collect();
+        self.metrics = resolver::expand_metrics(&self.settings.metrics, &self.snapshot, &self.settings.hardware);
+        self.readings = self.metrics.iter().map(|m| resolver::resolve(m, &self.snapshot, &self.settings)).collect();
     }
 
     // ---- widgets ------------------------------------------------------------------------------------------
@@ -422,7 +426,6 @@ impl App {
 
     fn render(&mut self) {
         let inputs: Vec<TileInput> = self
-            .settings
             .metrics
             .iter()
             .zip(&self.readings)
@@ -435,7 +438,7 @@ impl App {
                 w.render(&self.gfx, &inputs, &self.settings, &self.palette);
             }
             w.place(&self.settings, show);
-            if let Some((m, r)) = w.hover.and_then(|i| self.settings.metrics.get(i).zip(self.readings.get(i))) {
+            if let Some((m, r)) = w.hover.and_then(|i| self.metrics.get(i).zip(self.readings.get(i))) {
                 w.set_tooltip(&tooltip_text(m, r));
             }
         }
@@ -477,6 +480,7 @@ impl App {
         {
             let data = FlyoutData {
                 settings: &self.settings,
+                metrics: &self.metrics,
                 readings: &self.readings,
                 histories: &self.histories,
                 snapshot: &self.snapshot,
@@ -582,6 +586,7 @@ impl App {
         };
         let data = FlyoutData {
             settings: &self.settings,
+            metrics: &self.metrics,
             readings: &self.readings,
             histories: &self.histories,
             snapshot: &self.snapshot,
@@ -689,6 +694,12 @@ impl App {
             c if (tray::CMD_ROWS_BASE + 1..=tray::CMD_ROWS_BASE + 4).contains(&c) => {
                 let mut s = self.settings.clone();
                 s.layout.rows = c - tray::CMD_ROWS_BASE;
+                self.apply_settings(s);
+                self.save_settings();
+            }
+            c if (tray::CMD_GPU_BASE..tray::CMD_GPU_BASE + GpuDisplay::ALL.len() as u32).contains(&c) => {
+                let mut s = self.settings.clone();
+                s.hardware.gpu_display = GpuDisplay::ALL[(c - tray::CMD_GPU_BASE) as usize];
                 self.apply_settings(s);
                 self.save_settings();
             }
@@ -831,7 +842,7 @@ impl App {
                 if hover != self.widgets[idx].hover {
                     self.widgets[idx].hover = hover;
                     let text = hover
-                        .and_then(|i| self.settings.metrics.get(i).zip(self.readings.get(i)))
+                        .and_then(|i| self.metrics.get(i).zip(self.readings.get(i)))
                         .map(|(m, r)| tooltip_text(m, r))
                         .unwrap_or_default();
                     self.widgets[idx].set_tooltip(&text);

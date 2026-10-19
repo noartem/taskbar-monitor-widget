@@ -309,7 +309,9 @@ pub struct Hardware {
     pub thermal_zones: bool,
     /// Read every sensor published by a running LibreHardwareMonitor / OpenHardwareMonitor over WMI.
     pub lhm_bridge: bool,
-    /// Default GPU for GPU metrics without a source: empty = adapter with the most dedicated memory.
+    /// Which GPUs GPU metrics without an explicit source show.
+    pub gpu_display: GpuDisplay,
+    /// GPU for `gpu_display = main`: name substring or LUID; empty = adapter with the most dedicated memory.
     pub gpu_adapter: String,
     /// Interval for the slower sensor queries.
     pub sensor_interval_ms: u32,
@@ -317,7 +319,38 @@ pub struct Hardware {
 
 impl Default for Hardware {
     fn default() -> Self {
-        Self { gpu_sensors: true, thermal_zones: true, lhm_bridge: true, gpu_adapter: String::new(), sensor_interval_ms: 2000 }
+        Self {
+            gpu_sensors: true,
+            thermal_zones: true,
+            lhm_bridge: true,
+            gpu_display: GpuDisplay::Main,
+            gpu_adapter: String::new(),
+            sensor_interval_ms: 2000,
+        }
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize, Default)]
+#[serde(rename_all = "snake_case")]
+pub enum GpuDisplay {
+    /// One GPU: `gpu_adapter`, or the one with the most video memory (the most powerful).
+    #[default]
+    Main,
+    /// One GPU: whichever is busiest at the moment.
+    Busiest,
+    /// Every GPU gets its own tile (`GPU1`, `GPU2`…).
+    All,
+}
+
+impl GpuDisplay {
+    pub const ALL: [GpuDisplay; 3] = [GpuDisplay::Main, GpuDisplay::Busiest, GpuDisplay::All];
+
+    pub fn key(self) -> &'static str {
+        match self {
+            GpuDisplay::Main => "gpu.main",
+            GpuDisplay::Busiest => "gpu.busiest",
+            GpuDisplay::All => "gpu.all",
+        }
     }
 }
 
@@ -496,6 +529,11 @@ impl Settings {
         }
 
         self.hardware.sensor_interval_ms = self.hardware.sensor_interval_ms.clamp(500, 60_000);
+        // Earlier versions stored "busiest" as the `*` adapter.
+        if self.hardware.gpu_adapter.trim() == "*" {
+            self.hardware.gpu_adapter.clear();
+            self.hardware.gpu_display = GpuDisplay::Busiest;
+        }
 
         for m in &mut self.metrics {
             m.width = m.width.clamp(0.0, 400.0);

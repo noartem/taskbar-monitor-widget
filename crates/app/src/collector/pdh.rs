@@ -21,6 +21,9 @@ pub struct PdhNeeds {
     pub thermal: bool,
 }
 
+/// (instance name, value) pairs of a wildcard counter.
+pub type Instances = Vec<(String, f64)>;
+
 pub struct Pdh {
     query: PDH_HQUERY,
     pub needs: PdhNeeds,
@@ -170,6 +173,11 @@ impl Pdh {
             }
         }
         Some(result)
+    }
+
+    /// Raw GPU counter instances (engine, adapter memory) for the diagnostics view; `None` = counter missing.
+    pub fn gpu_raw(&self) -> (Option<Instances>, Option<Instances>) {
+        (self.gpu_engine.map(|c| Self::array(c, false)), self.gpu_memory.map(|c| Self::array(c, true)))
     }
 
     pub fn disks(&self) -> Vec<DiskInfo> {

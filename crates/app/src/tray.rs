@@ -1,7 +1,7 @@
 //! Notification area icon: tooltip, context menu and an optional live metric icon.
 
 use tm_core::color::{Palette, Rgba};
-use tm_core::config::{Autostart, Settings};
+use tm_core::config::{Autostart, GpuDisplay, Settings};
 use tm_core::i18n::tr;
 use tm_core::presets;
 use windows::Win32::Foundation::{HWND, POINT};
@@ -30,6 +30,7 @@ pub const CMD_TOGGLE_WIDGET: u32 = 3;
 pub const CMD_LOCK: u32 = 4;
 pub const CMD_PRESET_BASE: u32 = 100;
 pub const CMD_ROWS_BASE: u32 = 200;
+pub const CMD_GPU_BASE: u32 = 250;
 pub const CMD_AUTOSTART_OFF: u32 = 300;
 pub const CMD_AUTOSTART_USER: u32 = 301;
 pub const CMD_AUTOSTART_ELEVATED: u32 = 302;
@@ -182,6 +183,12 @@ impl Tray {
                     add(layouts, CMD_ROWS_BASE + rows, &format!("{}: {rows}", tr("menu.rows")), settings.layout.rows == rows);
                 }
                 let _ = AppendMenuW(menu, MF_POPUP, layouts.0 as usize, &HSTRING::from(tr("menu.layout")));
+            }
+            if let Ok(gpus) = CreatePopupMenu() {
+                for (i, mode) in GpuDisplay::ALL.iter().enumerate() {
+                    add(gpus, CMD_GPU_BASE + i as u32, tr(mode.key()), settings.hardware.gpu_display == *mode);
+                }
+                let _ = AppendMenuW(menu, MF_POPUP, gpus.0 as usize, &HSTRING::from(tr("menu.gpu")));
             }
             if let Ok(auto) = CreatePopupMenu() {
                 add(auto, CMD_AUTOSTART_OFF, tr("autostart.off"), autostart == Autostart::Off);

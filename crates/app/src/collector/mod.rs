@@ -301,18 +301,18 @@ fn sampler(shared: Arc<Shared>) {
 /// silently dropped. The default GPU is the one with the most dedicated memory among adapters that actually have
 /// counter data; on hybrid laptops that is the discrete GPU, which idles at 0% while the integrated one drives
 /// the display.
-fn merge_gpus(
+pub fn merge_gpus(
     adapters: &[gpu::Adapter],
     usage: Option<&HashMap<String, f64>>,
     dedicated: Option<&HashMap<String, u64>>,
     sensors: &HashMap<String, gpu::GpuSensor>,
 ) -> Vec<GpuInfo> {
-    let mut entries: Vec<(String, String, u64)> =
-        adapters.iter().map(|a| (a.name.clone(), a.luid_str.clone(), a.dedicated)).collect();
+    let mut entries: Vec<(String, String, u64, bool)> =
+        adapters.iter().map(|a| (a.name.clone(), a.luid_str.clone(), a.dedicated, true)).collect();
     let counter_luids = usage.into_iter().flat_map(|u| u.keys()).chain(dedicated.into_iter().flat_map(|d| d.keys()));
     for luid in counter_luids {
-        if !entries.iter().any(|(_, l, _)| l.eq_ignore_ascii_case(luid)) {
-            entries.push((format!("GPU {luid}"), luid.clone(), 0));
+        if !entries.iter().any(|(_, l, _, _)| l.eq_ignore_ascii_case(luid)) {
+            entries.push((format!("GPU {luid}"), luid.clone(), 0, false));
         }
     }
     let has_data = |luid: &str| {
@@ -320,14 +320,16 @@ fn merge_gpus(
     };
     let default_luid = entries
         .iter()
-        .filter(|(_, l, _)| has_data(l))
-        .max_by_key(|(_, _, total)| *total)
-        .or_else(|| entries.iter().max_by_key(|(_, _, total)| *total))
-        .map(|(_, l, _)| l.clone());
+        .filter(|(_, l, _, _)| has_data(l))
+        .max_by_key(|(_, _, total, _)| *total)
+        .or_else(|| entries.iter().max_by_key(|(_, _, total, _)| *total))
+        .map(|(_, l, _, _)| l.clone());
+    // Most video memory (the most powerful GPU) first; GPUs known only from counters last.
+    entries.sort_by(|a, b| b.3.cmp(&a.3).then(b.2.cmp(&a.2)));
 
     entries
         .into_iter()
-        .map(|(name, luid, total)| {
+        .map(|(name, luid, total, listed)| {
             let sensor = sensors.get(&luid);
             GpuInfo {
                 usage: usage.map(|u| u.get(&luid).copied().unwrap_or(0.0)),
@@ -337,6 +339,7 @@ fn merge_gpus(
                 temperature: sensor.and_then(|s| s.temperature),
                 fan_rpm: sensor.and_then(|s| s.fan_rpm),
                 is_default: default_luid.as_deref() == Some(luid.as_str()),
+                listed,
                 name,
                 luid,
             }
