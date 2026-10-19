@@ -37,6 +37,28 @@ pub fn copy_to_wide_buf(s: &str, buf: &mut [u16]) {
     }
 }
 
+/// Windows display language (`ru-RU`), falling back to the regional format locale.
+pub fn ui_language() -> String {
+    use windows::Win32::Globalization::{GetUserDefaultLocaleName, GetUserPreferredUILanguages, MUI_LANGUAGE_NAME};
+    use windows::core::PWSTR;
+    unsafe {
+        let mut count = 0u32;
+        let mut len = 0u32;
+        if GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &mut count, None, &mut len).is_ok() && len > 0 {
+            let mut buf = vec![0u16; len as usize];
+            if GetUserPreferredUILanguages(MUI_LANGUAGE_NAME, &mut count, Some(PWSTR(buf.as_mut_ptr())), &mut len).is_ok() {
+                // Double-NUL-terminated list; the first entry is the preferred language.
+                let first = from_wide(&buf);
+                if !first.is_empty() {
+                    return first;
+                }
+            }
+        }
+        let mut buf = [0u16; 85];
+        if GetUserDefaultLocaleName(&mut buf) > 0 { from_wide(&buf) } else { String::new() }
+    }
+}
+
 pub fn exe_path() -> PathBuf {
     std::env::current_exe().unwrap_or_else(|_| PathBuf::from("taskbar-monitor.exe"))
 }

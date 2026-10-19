@@ -180,6 +180,8 @@ struct SettingsApp {
     applied_theme: Option<ThemeMode>,
     query: String,
     focus: Focus,
+    /// Language the UI strings are currently initialized for.
+    applied_language: String,
 }
 
 fn mtime(path: &std::path::Path) -> Option<SystemTime> {
@@ -216,7 +218,7 @@ fn style_name(s: MetricStyle) -> &'static str {
 impl SettingsApp {
     fn new(cc: &eframe::CreationContext<'_>, paths: AppPaths) -> Self {
         let (settings, _) = config::load(&paths.config_file());
-        i18n::init(&settings.general.language, "");
+        i18n::init(&settings.general.language, &util::ui_language());
         setup_fonts(&cc.egui_ctx);
         let sources = Arc::new(Mutex::new(None));
         {
@@ -249,6 +251,7 @@ impl SettingsApp {
             applied_theme: None,
             query: String::new(),
             focus: Focus::default(),
+            applied_language: String::new(),
         }
     }
 
@@ -274,9 +277,6 @@ impl SettingsApp {
             let since = *self.dirty_since.get_or_insert_with(Instant::now);
             if since.elapsed() >= Duration::from_millis(350) {
                 self.dirty_since = None;
-                if self.settings.general.language != self.saved.general.language {
-                    i18n::init(&self.settings.general.language, "");
-                }
                 self.save_now();
             } else {
                 ctx.request_repaint_after(Duration::from_millis(120));
@@ -408,17 +408,13 @@ impl SettingsApp {
         let g = &mut self.settings.general;
         egui::Grid::new("general").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
             mark(&focus, "set.language", &ui.label(tr("set.language")));
-            ComboBox::from_id_salt("lang")
-                .selected_text(match g.language.as_str() {
-                    "en" => "English",
-                    "ru" => "Русский",
-                    _ => tr("set.language.auto"),
-                })
-                .show_ui(ui, |ui| {
-                    ui.selectable_value(&mut g.language, "auto".into(), tr("set.language.auto"));
-                    ui.selectable_value(&mut g.language, "en".into(), "English");
-                    ui.selectable_value(&mut g.language, "ru".into(), "Русский");
-                });
+            let current = i18n::Lang::from_code(&g.language).map(i18n::Lang::native_name).unwrap_or(tr("set.language.auto"));
+            ComboBox::from_id_salt("lang").selected_text(current).show_ui(ui, |ui| {
+                ui.selectable_value(&mut g.language, "auto".into(), tr("set.language.auto"));
+                for lang in i18n::Lang::ALL {
+                    ui.selectable_value(&mut g.language, lang.code().to_string(), lang.native_name());
+                }
+            });
             ui.end_row();
 
             mark(&focus, "set.refresh", &ui.label(tr("set.refresh")));
@@ -1332,6 +1328,11 @@ fn monitor_key(m: MonitorMode) -> &'static str {
 impl eframe::App for SettingsApp {
     fn ui(&mut self, ui: &mut egui::Ui, _frame: &mut eframe::Frame) {
         let ctx = ui.ctx().clone();
+        // Switch the interface language as soon as it is picked, not only after the debounced save.
+        if self.applied_language != self.settings.general.language {
+            self.applied_language = self.settings.general.language.clone();
+            i18n::init(&self.applied_language, &util::ui_language());
+        }
         self.apply_theme(&ctx);
         self.poll_jobs();
         if self.autostart_job.is_some() || self.claude_test.is_some() || self.focus.active() {
@@ -1409,20 +1410,22 @@ impl eframe::App for SettingsApp {
 fn setup_fonts(ctx: &egui::Context) {
     let mut fonts = egui::FontDefinitions::default();
     let windir = std::env::var("WINDIR").unwrap_or_else(|_| r"C:\Windows".into());
-    let candidates = [("segoe", "segoeui.ttf"), ("segoe_symbol", "seguisym.ttf")];
-    let mut added = Vec::new();
-    for (name, file) in candidates {
-        if let Ok(bytes) = std::fs::read(PathBuf::from(&windir).join("Fonts").join(file)) {
-            fonts.font_data.insert(name.into(), Arc::new(egui::FontData::from_owned(bytes)));
-            added.push(name);
-        }
+    let font_dir = PathBuf::from(&windir).join("Fonts");
+    let load = |file: &str| std::fs::read(font_dir.join(file)).ok().map(|b| Arc::new(egui::FontData::from_owned(b)));
+    let Some(list) = fonts.families.get_mut(&egui::FontFamily::Proportional) else { return };
+    // Segoe UI first, the symbol font as the first fallback.
+    if let Some(data) = load("segoeui.ttf") {
+        fonts.font_data.insert("segoe".into(), data);
+        list.insert(0, "segoe".into());
     }
-    if let Some(list) = fonts.families.get_mut(&egui::FontFamily::Proportional) {
-        for (i, name) in added.iter().enumerate() {
-            // Segoe UI first, the symbol font as the first fallback.
-            let pos = if i == 0 { 0 } else { 1.min(list.len()) };
-            list.insert(pos, (*name).to_string());
-        }
+    if let Some(data) = load("seguisym.ttf") {
+        fonts.font_data.insert("segoe_symbol".into(), data);
+        list.insert(1.min(list.len()), "segoe_symbol".into());
+    }
+    // Chinese glyphs (the language picker shows 中文 in every language): Microsoft YaHei, else SimSun.
+    if let Some(data) = load("msyh.ttc").or_else(|| load("simsun.ttc")) {
+        fonts.font_data.insert("cjk".into(), data);
+        list.push("cjk".into());
     }
     ctx.set_fonts(fonts);
 }

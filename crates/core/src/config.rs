@@ -86,7 +86,7 @@ pub enum NetworkUnit {
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct General {
-    /// `auto`, `en` or `ru`.
+    /// `auto` (Windows display language) or `en`, `ru`, `zh`, `es`, `fr`, `pt`, `de`.
     pub language: String,
     pub refresh_interval_ms: u32,
     /// Samples kept for graphs.
@@ -496,7 +496,7 @@ impl Settings {
         let g = &mut self.general;
         g.refresh_interval_ms = g.refresh_interval_ms.clamp(250, 60_000);
         g.history_length = g.history_length.clamp(10, 3600);
-        if !matches!(g.language.as_str(), "auto" | "en" | "ru") {
+        if g.language != "auto" && crate::i18n::Lang::from_code(&g.language).is_none() {
             g.language = "auto".into();
         }
 

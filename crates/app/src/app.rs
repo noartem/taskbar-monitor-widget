@@ -214,17 +214,11 @@ fn file_mtime(path: &std::path::Path) -> Option<SystemTime> {
     std::fs::metadata(path).and_then(|m| m.modified()).ok()
 }
 
-fn system_locale() -> String {
-    let mut buf = [0u16; 85];
-    let n = unsafe { windows::Win32::Globalization::GetUserDefaultLocaleName(&mut buf) };
-    if n > 0 { util::from_wide(&buf) } else { String::new() }
-}
-
 impl App {
     fn new(opts: Options, main: HWND) -> windows::core::Result<Self> {
         let config_path = opts.paths.config_file();
         let (settings, outcome) = config::load(&config_path);
-        i18n::init(&settings.general.language, &system_locale());
+        i18n::init(&settings.general.language, &util::ui_language());
         if let LoadOutcome::Recovered { backup, error } = &outcome {
             util::error_box(&trf("dlg.config_broken", &[&backup.display().to_string(), error]));
         }
@@ -303,7 +297,7 @@ impl App {
     fn apply_settings(&mut self, new: Settings) {
         let old = std::mem::replace(&mut self.settings, new);
         if old.general.language != self.settings.general.language {
-            i18n::init(&self.settings.general.language, &system_locale());
+            i18n::init(&self.settings.general.language, &util::ui_language());
         }
         self.collector.update(requirements(&self.settings));
         let cap = self.settings.general.history_length as usize;

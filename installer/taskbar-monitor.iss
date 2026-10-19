@@ -1,4 +1,4 @@
-; Inno Setup script for the system-wide installation of Taskbar Monitor.
+﻿; Inno Setup script for the system-wide installation of Taskbar Monitor.
 ;   iscc /DAppVersion=1.2.3 /DArch=x64 /DSourceExe=..\target\x86_64-pc-windows-msvc\release\taskbar-monitor.exe taskbar-monitor.iss
 ;
 ; Installs to Program Files (administrator rights), and by default registers a Task Scheduler task that starts
@@ -51,6 +51,10 @@ CloseApplications=no
 [Languages]
 Name: "en"; MessagesFile: "compiler:Default.isl"
 Name: "ru"; MessagesFile: "compiler:Languages\Russian.isl"
+Name: "es"; MessagesFile: "compiler:Languages\Spanish.isl"
+Name: "fr"; MessagesFile: "compiler:Languages\French.isl"
+Name: "pt"; MessagesFile: "compiler:Languages\BrazilianPortuguese.isl"
+Name: "de"; MessagesFile: "compiler:Languages\German.isl"
 
 [CustomMessages]
 en.AutostartAdmin=Start with Windows as administrator (no UAC prompt)
@@ -61,6 +65,22 @@ en.LaunchApp=Launch {#AppName}
 ru.LaunchApp=Запустить {#AppName}
 en.SettingsShortcut={#AppName} Settings
 ru.SettingsShortcut=Настройки {#AppName}
+es.AutostartAdmin=Iniciar con Windows como administrador (sin aviso de UAC)
+es.StartupGroup=Inicio:
+es.LaunchApp=Iniciar {#AppName}
+es.SettingsShortcut=Ajustes de {#AppName}
+fr.AutostartAdmin=Démarrer avec Windows en tant qu'administrateur (sans invite UAC)
+fr.StartupGroup=Démarrage :
+fr.LaunchApp=Lancer {#AppName}
+fr.SettingsShortcut=Paramètres de {#AppName}
+pt.AutostartAdmin=Iniciar com o Windows como administrador (sem aviso do UAC)
+pt.StartupGroup=Inicialização:
+pt.LaunchApp=Iniciar o {#AppName}
+pt.SettingsShortcut=Configurações do {#AppName}
+de.AutostartAdmin=Mit Windows als Administrator starten (ohne UAC-Abfrage)
+de.StartupGroup=Autostart:
+de.LaunchApp={#AppName} starten
+de.SettingsShortcut={#AppName}-Einstellungen
 
 [Tasks]
 Name: "autostart"; Description: "{cm:AutostartAdmin}"; GroupDescription: "{cm:StartupGroup}"
