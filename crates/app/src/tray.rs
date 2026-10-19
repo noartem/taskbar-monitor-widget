@@ -247,7 +247,7 @@ pub fn icon_from_premultiplied(pixels: &[u8], width: i32, height: i32) -> Option
         let mut bits = std::ptr::null_mut();
         let color: HBITMAP = CreateDIBSection(None, &info, DIB_RGB_COLORS, &mut bits, None, 0).ok()?;
         let dst = std::slice::from_raw_parts_mut(bits as *mut u8, pixels.len());
-        for (d, s) in dst.chunks_exact_mut(4).zip(pixels.chunks_exact(4)) {
+        for (d, s) in dst.as_chunks_mut::<4>().0.iter_mut().zip(pixels.as_chunks::<4>().0) {
             let a = s[3];
             if a == 0 {
                 d.copy_from_slice(&[0, 0, 0, 0]);
