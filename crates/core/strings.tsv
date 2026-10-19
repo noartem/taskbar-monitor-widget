@@ -1,0 +1,202 @@
+# key	English	Russian  (use \n for line breaks)
+kind.cpu_usage	CPU usage	Загрузка CPU
+kind.cpu_temp	CPU temperature	Температура CPU
+kind.ram_usage	RAM usage	Использование RAM
+kind.gpu_usage	GPU usage	Загрузка GPU
+kind.gpu_temp	GPU temperature	Температура GPU
+kind.vram_usage	VRAM usage	Использование VRAM
+kind.net_down	Network download	Сеть: загрузка
+kind.net_up	Network upload	Сеть: отдача
+kind.net_total	Network total	Сеть: всего
+kind.disk_read	Disk read	Диск: чтение
+kind.disk_write	Disk write	Диск: запись
+kind.disk_active	Disk active time	Активность диска
+kind.disk_space	Disk space	Место на диске
+kind.claude_session	Claude: session (5h)	Claude: сессия (5ч)
+kind.claude_weekly	Claude: week (7d)	Claude: неделя (7д)
+kind.claude_model	Claude: model week (Fable/Opus…)	Claude: неделя модели (Fable/Opus…)
+kind.claude_extra	Claude: extra usage	Claude: доп. использование
+kind.sensor	Hardware sensor	Датчик оборудования
+style.text	Text	Текст
+style.bar	Bar	Полоса
+style.v_bar	Vertical bar	Вертикальная полоса
+style.fill	Fill	Заливка
+style.line	Line graph	Линейный график
+style.area	Area graph	График с заливкой
+style.columns	Columns	Столбцы
+style.ring	Ring	Кольцо
+preset.graphs	Graphs (default)	Графики (по умолчанию)
+preset.compact	Compact text, 1 row	Компактный текст, 1 строка
+preset.minimal	Minimal fills	Минимализм (заливки)
+preset.rings	Rings	Кольца
+preset.claude	Claude only	Только Claude
+preset.dense	Dense, 3 rows	Плотно, 3 строки
+click.none	Nothing	Ничего
+click.flyout	Show details	Показать подробности
+click.settings	Open settings	Открыть настройки
+click.toggle	Hide/show widget	Скрыть/показать виджет
+click.taskmgr	Open Task Manager	Открыть диспетчер задач
+claude.disabled	Claude monitoring is off	Мониторинг Claude выключен
+claude.loading	Loading…	Загрузка…
+claude.ok	OK	OK
+claude.no_credentials	Not logged in: run `claude` and /login	Нет входа: запустите `claude` и выполните /login
+claude.expired	Token expired: run `claude` once to refresh it	Токен истёк: запустите `claude`, чтобы обновить
+claude.unauthorized	Access denied by the usage API	Доступ к API использования запрещён
+claude.rate_limited	Rate limited, will retry later	Слишком много запросов, повтор позже
+claude.error	Request failed	Ошибка запроса
+claude.not_available	Not available for this plan	Недоступно для этого тарифа
+claude.stale	Showing last known values	Показаны последние известные значения
+status.no_sensor	No sensor data	Нет данных датчика
+menu.details	Details	Подробности
+menu.settings	Settings…	Настройки…
+menu.show_widget	Show widget	Показывать виджет
+menu.lock	Lock position	Закрепить положение
+menu.layout	Layout	Раскладка
+menu.rows	Rows	Строки
+menu.autostart	Start with Windows	Запуск вместе с Windows
+autostart.off	Off	Выключен
+autostart.user	As current user	От текущего пользователя
+autostart.elevated	As administrator (Task Scheduler)	От администратора (Планировщик заданий)
+menu.restart_admin	Restart as administrator…	Перезапустить от имени администратора…
+menu.running_admin	Running as administrator	Запущено от имени администратора
+menu.refresh_claude	Refresh Claude usage	Обновить данные Claude
+menu.open_config	Open config.toml	Открыть config.toml
+menu.open_folder	Open data folder	Открыть папку с данными
+menu.exit	Exit	Выход
+dlg.restart_admin	Taskbar Monitor will restart with administrator rights.\nWindows will ask for confirmation (UAC).\n\nContinue?	Taskbar Monitor будет перезапущен с правами администратора.\nWindows запросит подтверждение (UAC).\n\nПродолжить?
+dlg.elevated_autostart	Starting as administrator at logon requires a one-time confirmation (UAC). Continue?	Для запуска от администратора при входе нужно один раз подтвердить действие (UAC). Продолжить?
+dlg.config_broken	config.toml could not be read and was backed up to:\n{0}\n\nError: {1}\n\nDefault settings are used.	Не удалось прочитать config.toml, копия сохранена в:\n{0}\n\nОшибка: {1}\n\nИспользуются настройки по умолчанию.
+dlg.error	Error	Ошибка
+flyout.admin	Administrator	Администратор
+flyout.user	Standard user	Обычный пользователь
+flyout.portable	portable	портативная
+flyout.installed	installed	установленная
+flyout.resets	resets in {0}	сброс через {0}
+flyout.plan	Plan: {0}	Тариф: {0}
+flyout.updated	updated {0} ago	обновлено {0} назад
+flyout.settings	Settings	Настройки
+flyout.no_metrics	No metrics are enabled for the details view.	Для окна подробностей не выбрано ни одной метрики.
+set.about.admin_hint	Administrator rights let the widget read ACPI temperature sensors and start at logon without a UAC prompt.	Права администратора позволяют читать температурные датчики ACPI и запускаться при входе без запроса UAC.
+set.about.config	Config file	Файл настроек
+set.about.mode	Edition	Вариант
+set.about.rights	Rights	Права
+set.accent	Accent color	Акцентный цвет
+set.add	Add	Добавить
+set.advanced	Advanced	Дополнительно
+set.auto	Automatic	Автоматически
+set.autostart.cancelled	Cancelled	Отменено
+set.autostart.hint	"As administrator" registers a Task Scheduler task and asks for UAC confirmation once.	«От администратора» создаёт задание в Планировщике и один раз запрашивает подтверждение UAC.
+set.background	Background	Фон
+set.bar_width	Bar width	Ширина полосы
+set.bold	Bold values	Жирные значения
+set.claude.countdown	Show time until reset	Показывать время до сброса
+set.claude.credentials	Credentials file	Файл учётных данных
+set.claude.enabled	Monitor Claude Code subscription usage	Отслеживать использование подписки Claude Code
+set.claude.endpoint	Usage endpoint	Адрес API использования
+set.claude.hint	Reads the OAuth token that Claude Code (CLI) stores after /login and asks Anthropic for the same limits /usage shows: 5-hour session, 7-day week and per-model weekly limits (Fable, Opus…) when your plan has them. The token never leaves your machine except to that endpoint.	Использует OAuth-токен, который Claude Code (CLI) сохраняет после /login, и запрашивает у Anthropic те же лимиты, что показывает /usage: сессия 5 ч, неделя 7 д и недельные лимиты по моделям (Fable, Opus…), если они есть в тарифе. Токен никуда, кроме этого адреса, не отправляется.
+set.claude.interval	Poll interval	Интервал опроса
+set.claude.test	Check now	Проверить сейчас
+set.color_by_category	Color by category (CPU, GPU, memory, network, disk, Claude)	Цвет по категории (CPU, GPU, память, сеть, диск, Claude)
+set.corner_radius	Corner radius	Скругление углов
+set.crit	Critical from	Критично от
+set.custom	Custom	Свой
+set.double_click	Double click	Двойной клик
+set.drag_hint	Drag the widget along the taskbar, then lock it again.	Перетащите виджет вдоль панели задач и снова закрепите.
+set.duplicate	Duplicate	Дублировать
+set.font	Font family	Шрифт
+set.font_size	Font size	Размер шрифта
+set.graph_width	Graph width	Ширина графика
+set.hide_fullscreen	Hide while a full-screen app is active	Скрывать при полноэкранных приложениях
+set.history	Graph history	История графиков
+set.hw.add_sensor_hint	Press + to add a sensor as a metric:	Нажмите +, чтобы добавить датчик как метрику:
+set.hw.detected	Detected hardware	Найденное оборудование
+set.hw.gpu	Default GPU	GPU по умолчанию
+set.hw.gpu_sensors	GPU temperature and fan from the display driver (no admin rights needed)	Температура и вентилятор GPU из драйвера (права администратора не нужны)
+set.hw.interval	Sensor interval	Интервал датчиков
+set.hw.lhm	Read all sensors from LibreHardwareMonitor / OpenHardwareMonitor when it runs	Читать все датчики из LibreHardwareMonitor / OpenHardwareMonitor, если он запущен
+set.hw.lhm_hint	For CPU package temperature, clocks, fans and voltages run	Для температуры CPU, частот, вентиляторов и напряжений запустите
+set.hw.no_lhm	LibreHardwareMonitor is not running — only built-in sensors are available.	LibreHardwareMonitor не запущен — доступны только встроенные датчики.
+set.hw.sensors	Sensors	Датчики
+set.hw.thermal	CPU temperature from ACPI thermal zones	Температура CPU из термозон ACPI
+set.label_opacity	Label opacity	Прозрачность подписей
+set.language	Language	Язык
+set.language.auto	System	Системный
+set.left_click	Click	Клик
+set.live	Changes are applied automatically	Изменения применяются автоматически
+set.metric.color	Color	Цвет
+set.metric.decimals	Decimals	Знаков после запятой
+set.metric.hide_unavailable	Hide when there is no data	Скрывать, если нет данных
+set.metric.kind	Metric	Метрика
+set.metric.label	Label	Подпись
+set.metric.max	Scale maximum	Максимум шкалы
+set.metric.max_hint	bytes/s or units; 0 = automatic	байт/с или единицы; 0 = авто
+set.metric.overlay	Text over the graph	Текст поверх графика
+set.metric.show	Show	Показывать
+set.metric.show_label	Label	Подпись
+set.metric.show_value	Value	Значение
+set.metric.source	Source	Источник
+set.metric.style	View	Вид
+set.metric.width	Graph/bar width	Ширина графика/полосы
+set.metrics.columns	▲▼ order · ☑ widget · ☑ details	▲▼ порядок · ☑ виджет · ☑ подробности
+set.metrics.empty	No metrics. Add one on the left.	Нет метрик. Добавьте слева.
+set.metrics.hint	Order, visibility and look of every tile. Tiles fill columns top to bottom.	Порядок, видимость и вид каждой плитки. Плитки заполняют столбцы сверху вниз.
+set.middle_click	Middle click	Средняя кнопка
+set.minus_one_auto	-1 = auto	-1 = авто
+set.mode	Mode	Режим
+set.mode.embedded	Embedded in taskbar (experimental)	Встроить в панель задач (экспериментально)
+set.mode.overlay	Over the taskbar	Поверх панели задач
+set.monitor	Monitors	Мониторы
+set.monitor.all	All taskbars	Все панели задач
+set.monitor.primary	Primary	Основной
+set.monitor.specific	Monitor #	Монитор №
+set.network_unit	Network units	Единицы сети
+set.no	No	Нет
+set.offset	Offset	Смещение
+set.opacity	opacity	непрозрачность
+set.padding	Padding	Внутренний отступ
+set.pending	Saving…	Сохранение…
+set.placement	Position	Положение
+set.placement.center	Center	По центру
+set.placement.left	Left edge	Слева
+set.placement.tray	Next to the tray	Рядом с треем
+set.presets.hint	A preset replaces the metric list and row count.	Пресет заменяет список метрик и число строк.
+set.refresh	Refresh interval	Интервал обновления
+set.remove	Remove	Удалить
+set.reset	Reset all settings	Сбросить все настройки
+set.reset.confirm	Reset everything to defaults?	Сбросить всё по умолчанию?
+set.samples	samples	точек
+set.saved	Saved	Сохранено
+set.secondary_margin	Clock space on other monitors	Место под часы на других мониторах
+set.section.about	About	О программе
+set.section.appearance	Appearance	Внешний вид
+set.section.claude	Claude Code	Claude Code
+set.section.general	General	Общие
+set.section.hardware	Hardware	Оборудование
+set.section.layout	Layout	Раскладка
+set.section.metrics	Metrics	Метрики
+set.show_flyout	Details	Подробности
+set.show_widget	Widget	Виджет
+set.source.all_adapters	All adapters	Все адаптеры
+set.source.claude_hint	Empty = automatic: Fable, then Opus, then Sonnet — whichever your plan has.	Пусто = авто: Fable, затем Opus, затем Sonnet — что есть в вашем тарифе.
+set.source.custom	or type a value	или введите значение
+set.source.disk_hint	Empty = all disks (_Total).	Пусто = все диски (_Total).
+set.source.network_hint	Empty = physical adapters, * = all adapters.	Пусто = физические адаптеры, * = все адаптеры.
+set.system_accent	Windows accent color	Акцентный цвет Windows
+set.text_color	Text color	Цвет текста
+set.theme	Theme	Тема
+set.theme.custom	Custom colors	Свои цвета
+set.theme.dark	Dark	Тёмная
+set.theme.light	Light	Светлая
+set.theme.system	System (follows the taskbar)	Системная (как у панели задач)
+set.thresholds	Thresholds	Пороги
+set.tile_spacing	Tile spacing	Расстояние между плитками
+set.tray	Tray icon	Значок в трее
+set.tray.app_icon	App icon	Значок приложения
+set.tray.metric_icon	Live value:	Живое значение:
+set.tray.show	Show tray icon	Показывать значок в трее
+set.tray.tooltip	Summary tooltip	Подсказка со сводкой
+set.use_thresholds	Color values above thresholds	Подсвечивать значения выше порогов
+set.vertical_margin	Vertical margin	Вертикальный отступ
+set.warn	Warning from	Предупреждение от
+set.yes	Yes	Да
+set.zero_auto	0 = automatic	0 = авто

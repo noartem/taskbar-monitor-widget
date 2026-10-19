@@ -1,0 +1,25 @@
+Taskbar Monitor — portable edition
+===================================
+
+This file switches the program to portable mode: settings (config.toml) and the log are kept
+in this folder instead of %APPDATA%\TaskbarMonitor. Delete it to use the per-user location.
+
+* Run taskbar-monitor.exe. It starts with normal user rights.
+* Need administrator rights (ACPI temperature sensors)?
+  Right-click the widget or the tray icon -> "Restart as administrator..." -> confirm -> accept UAC.
+* Start with Windows: tray menu -> "Start with Windows" (as current user, or as administrator via
+  Task Scheduler — that one asks for UAC confirmation once).
+
+---
+
+Taskbar Monitor — портативная версия
+=====================================
+
+Этот файл включает портативный режим: настройки (config.toml) и журнал хранятся в этой папке,
+а не в %APPDATA%\TaskbarMonitor. Удалите файл, чтобы использовать профиль пользователя.
+
+* Запустите taskbar-monitor.exe — он стартует с обычными правами.
+* Нужны права администратора (датчики температуры ACPI)?
+  ПКМ по виджету или значку в трее -> «Перезапустить от имени администратора…» -> подтвердите -> UAC.
+* Автозапуск: меню трея -> «Запуск вместе с Windows» (от текущего пользователя или от администратора
+  через Планировщик заданий — однократно запросит подтверждение UAC).
