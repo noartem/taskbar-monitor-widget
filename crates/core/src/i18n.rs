@@ -38,6 +38,17 @@ pub fn tr(key: &str) -> &'static str {
     }
 }
 
+/// `key` in a specific language (used by the settings search, which matches both languages).
+pub fn tr_in(key: &str, lang: Lang) -> &'static str {
+    match STRINGS.binary_search_by(|(k, _, _)| (*k).cmp(key)) {
+        Ok(i) => match lang {
+            Lang::En => STRINGS[i].1,
+            Lang::Ru => STRINGS[i].2,
+        },
+        Err(_) => missing(key),
+    }
+}
+
 /// Interns unknown keys once so `tr` can hand out `'static` strings.
 fn missing(key: &str) -> &'static str {
     static MISSING: Mutex<BTreeMap<String, &'static str>> = Mutex::new(BTreeMap::new());

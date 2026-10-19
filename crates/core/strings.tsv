@@ -211,3 +211,6 @@ set.hw.gpu_diag	GPU diagnostics	Диагностика GPU
 set.hw.copy_diag	Copy diagnostics	Скопировать диагностику
 set.hw.copied	Copied to clipboard	Скопировано в буфер обмена
 set.hw.refresh	Refresh	Обновить
+set.search	Search settings (Ctrl+F)	Поиск настроек (Ctrl+F)
+set.search.none	Nothing found	Ничего не найдено
+set.search.results	Search: {0}	Поиск: {0}

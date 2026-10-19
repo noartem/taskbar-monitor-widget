@@ -178,6 +178,8 @@ struct SettingsApp {
     status: Option<(String, Instant)>,
     confirm_reset: bool,
     applied_theme: Option<ThemeMode>,
+    query: String,
+    focus: Focus,
 }
 
 fn mtime(path: &std::path::Path) -> Option<SystemTime> {
@@ -245,6 +247,8 @@ impl SettingsApp {
             status: None,
             confirm_reset: false,
             applied_theme: None,
+            query: String::new(),
+            focus: Focus::default(),
         }
     }
 
@@ -363,12 +367,47 @@ impl SettingsApp {
         }
     }
 
+    /// Opens the section of a search hit and highlights the setting.
+    fn jump_to(&mut self, section: Section, key: &'static str) {
+        self.section = section;
+        self.query.clear();
+        if let Some(kind) = MetricKind::ALL.into_iter().find(|k| tr_key_static(*k) == key) {
+            if let Some(i) = self.settings.metrics.iter().position(|m| m.kind == kind) {
+                self.selected = i;
+            } else {
+                self.add_kind = kind;
+            }
+            self.focus = Focus::new("set.metric.kind");
+        } else {
+            self.focus = Focus::new(key);
+        }
+    }
+
+    fn search_results(&mut self, ui: &mut egui::Ui) {
+        let hits = search(&self.query);
+        if hits.is_empty() {
+            ui.label(RichText::new(tr("set.search.none")).weak());
+            return;
+        }
+        let mut chosen = None;
+        for (section, key) in &hits {
+            let text = format!("{}  ›  {}", tr(section.key()), tr(key));
+            if ui.add(egui::Button::new(text).frame(false)).on_hover_cursor(egui::CursorIcon::PointingHand).clicked() {
+                chosen = Some((*section, *key));
+            }
+        }
+        if let Some((section, key)) = chosen {
+            self.jump_to(section, key);
+        }
+    }
+
     // ---- sections -----------------------------------------------------------------------------------------
 
     fn general(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         let g = &mut self.settings.general;
         egui::Grid::new("general").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
-            ui.label(tr("set.language"));
+            mark(&focus, "set.language", &ui.label(tr("set.language")));
             ComboBox::from_id_salt("lang")
                 .selected_text(match g.language.as_str() {
                     "en" => "English",
@@ -382,15 +421,15 @@ impl SettingsApp {
                 });
             ui.end_row();
 
-            ui.label(tr("set.refresh"));
+            mark(&focus, "set.refresh", &ui.label(tr("set.refresh")));
             ui.add(Slider::new(&mut g.refresh_interval_ms, 250..=5000).suffix(" ms").step_by(250.0));
             ui.end_row();
 
-            ui.label(tr("set.history"));
+            mark(&focus, "set.history", &ui.label(tr("set.history")));
             ui.add(Slider::new(&mut g.history_length, 10..=600).suffix(format!(" {}", tr("set.samples"))));
             ui.end_row();
 
-            ui.label(tr("set.network_unit"));
+            mark(&focus, "set.network_unit", &ui.label(tr("set.network_unit")));
             ui.horizontal(|ui| {
                 ui.radio_value(&mut g.network_unit, NetworkUnit::Bytes, "MB/s");
                 ui.radio_value(&mut g.network_unit, NetworkUnit::Bits, "Mbps");
@@ -413,7 +452,7 @@ impl SettingsApp {
         });
 
         ui.add_space(12.0);
-        ui.heading(tr("menu.autostart"));
+        mark(&focus, "menu.autostart", &ui.heading(tr("menu.autostart")));
         ui.label(RichText::new(tr("set.autostart.hint")).weak());
         let busy = self.autostart_job.is_some();
         let mut chosen = self.autostart_actual;
@@ -435,9 +474,10 @@ impl SettingsApp {
     }
 
     fn appearance(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         let a = &mut self.settings.appearance;
         egui::Grid::new("appearance").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
-            ui.label(tr("set.theme"));
+            mark(&focus, "set.theme", &ui.label(tr("set.theme")));
             ComboBox::from_id_salt("theme").selected_text(tr(theme_key(a.theme))).show_ui(ui, |ui| {
                 for t in [ThemeMode::System, ThemeMode::Light, ThemeMode::Dark, ThemeMode::Custom] {
                     ui.selectable_value(&mut a.theme, t, tr(theme_key(t)));
@@ -446,42 +486,42 @@ impl SettingsApp {
             ui.end_row();
 
             if a.theme == ThemeMode::Custom {
-                ui.label(tr("set.text_color"));
+                mark(&focus, "set.text_color", &ui.label(tr("set.text_color")));
                 ui.horizontal(|ui| color_field(ui, &mut a.foreground_color));
                 ui.end_row();
             }
-            ui.label(tr("set.background"));
+            mark(&focus, "set.background", &ui.label(tr("set.background")));
             ui.horizontal(|ui| {
                 color_field(ui, &mut a.background_color);
                 ui.add(Slider::new(&mut a.background_opacity, 0.0..=1.0).text(tr("set.opacity")));
             });
             ui.end_row();
 
-            ui.label(tr("set.corner_radius"));
+            mark(&focus, "set.corner_radius", &ui.label(tr("set.corner_radius")));
             ui.add(Slider::new(&mut a.corner_radius, 0.0..=16.0));
             ui.end_row();
 
-            ui.label(tr("set.font"));
+            mark(&focus, "set.font", &ui.label(tr("set.font")));
             ui.horizontal(|ui| {
                 ui.add(TextEdit::singleline(&mut a.font_family).desired_width(200.0));
-                ui.checkbox(&mut a.font_bold, tr("set.bold"));
+                mark(&focus, "set.bold", &ui.checkbox(&mut a.font_bold, tr("set.bold")));
             });
             ui.end_row();
 
-            ui.label(tr("set.font_size"));
+            mark(&focus, "set.font_size", &ui.label(tr("set.font_size")));
             ui.horizontal(|ui| {
                 ui.add(DragValue::new(&mut a.font_size).range(0.0..=40.0).speed(0.25));
                 ui.label(RichText::new(tr("set.zero_auto")).weak());
             });
             ui.end_row();
 
-            ui.label(tr("set.label_opacity"));
+            mark(&focus, "set.label_opacity", &ui.label(tr("set.label_opacity")));
             ui.add(Slider::new(&mut a.label_opacity, 0.1..=1.0));
             ui.end_row();
 
-            ui.label(tr("set.accent"));
+            mark(&focus, "set.accent", &ui.label(tr("set.accent")));
             ui.horizontal(|ui| {
-                ui.checkbox(&mut a.use_system_accent, tr("set.system_accent"));
+                mark(&focus, "set.system_accent", &ui.checkbox(&mut a.use_system_accent, tr("set.system_accent")));
                 if !a.use_system_accent {
                     color_field(ui, &mut a.accent_color);
                 }
@@ -489,20 +529,20 @@ impl SettingsApp {
             ui.end_row();
 
             ui.label("");
-            ui.checkbox(&mut a.color_by_category, tr("set.color_by_category"));
+            mark(&focus, "set.color_by_category", &ui.checkbox(&mut a.color_by_category, tr("set.color_by_category")));
             ui.end_row();
 
-            ui.label(tr("set.thresholds"));
-            ui.checkbox(&mut a.use_threshold_colors, tr("set.use_thresholds"));
+            mark(&focus, "set.thresholds", &ui.label(tr("set.thresholds")));
+            mark(&focus, "set.use_thresholds", &ui.checkbox(&mut a.use_threshold_colors, tr("set.use_thresholds")));
             ui.end_row();
             if a.use_threshold_colors {
-                ui.label(tr("set.warn"));
+                mark(&focus, "set.warn", &ui.label(tr("set.warn")));
                 ui.horizontal(|ui| {
                     ui.add(Slider::new(&mut a.warn_threshold, 0.0..=100.0).suffix("%"));
                     color_field(ui, &mut a.warn_color);
                 });
                 ui.end_row();
-                ui.label(tr("set.crit"));
+                mark(&focus, "set.crit", &ui.label(tr("set.crit")));
                 ui.horizontal(|ui| {
                     ui.add(Slider::new(&mut a.crit_threshold, 0.0..=100.0).suffix("%"));
                     color_field(ui, &mut a.crit_color);
@@ -510,23 +550,24 @@ impl SettingsApp {
                 ui.end_row();
             }
 
-            ui.label(tr("set.padding"));
+            mark(&focus, "set.padding", &ui.label(tr("set.padding")));
             ui.add(Slider::new(&mut a.padding, 0.0..=16.0));
             ui.end_row();
-            ui.label(tr("set.tile_spacing"));
+            mark(&focus, "set.tile_spacing", &ui.label(tr("set.tile_spacing")));
             ui.add(Slider::new(&mut a.tile_spacing, 0.0..=40.0));
             ui.end_row();
-            ui.label(tr("set.graph_width"));
+            mark(&focus, "set.graph_width", &ui.label(tr("set.graph_width")));
             ui.add(Slider::new(&mut a.graph_width, 8.0..=160.0));
             ui.end_row();
-            ui.label(tr("set.bar_width"));
+            mark(&focus, "set.bar_width", &ui.label(tr("set.bar_width")));
             ui.add(Slider::new(&mut a.bar_width, 4.0..=160.0));
             ui.end_row();
         });
     }
 
     fn layout(&mut self, ui: &mut egui::Ui) {
-        ui.heading(tr("menu.layout"));
+        let focus = self.focus.clone();
+        mark(&focus, "menu.layout", &ui.heading(tr("menu.layout")));
         ui.label(RichText::new(tr("set.presets.hint")).weak());
         ui.horizontal_wrapped(|ui| {
             for p in presets::ALL {
@@ -540,7 +581,7 @@ impl SettingsApp {
 
         let l = &mut self.settings.layout;
         egui::Grid::new("layout").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
-            ui.label(tr("set.placement"));
+            mark(&focus, "set.placement", &ui.label(tr("set.placement")));
             ComboBox::from_id_salt("placement").selected_text(tr(placement_key(l.placement))).show_ui(ui, |ui| {
                 for p in [Placement::NearTray, Placement::Left, Placement::Center] {
                     ui.selectable_value(&mut l.placement, p, tr(placement_key(p)));
@@ -548,7 +589,7 @@ impl SettingsApp {
             });
             ui.end_row();
 
-            ui.label(tr("set.offset"));
+            mark(&focus, "set.offset", &ui.label(tr("set.offset")));
             ui.horizontal(|ui| {
                 ui.label("X");
                 ui.add(DragValue::new(&mut l.offset_x).speed(1.0));
@@ -557,15 +598,15 @@ impl SettingsApp {
             });
             ui.end_row();
 
-            ui.label(tr("menu.rows"));
+            mark(&focus, "menu.rows", &ui.label(tr("menu.rows")));
             ui.add(Slider::new(&mut l.rows, 1..=4));
             ui.end_row();
 
-            ui.label(tr("set.vertical_margin"));
+            mark(&focus, "set.vertical_margin", &ui.label(tr("set.vertical_margin")));
             ui.add(Slider::new(&mut l.vertical_margin, 0.0..=12.0));
             ui.end_row();
 
-            ui.label(tr("set.monitor"));
+            mark(&focus, "set.monitor", &ui.label(tr("set.monitor")));
             ui.horizontal(|ui| {
                 ComboBox::from_id_salt("monitor").selected_text(tr(monitor_key(l.monitor))).show_ui(ui, |ui| {
                     for m in [MonitorMode::Primary, MonitorMode::All, MonitorMode::Specific] {
@@ -578,11 +619,11 @@ impl SettingsApp {
             });
             ui.end_row();
 
-            ui.label(tr("set.secondary_margin"));
+            mark(&focus, "set.secondary_margin", &ui.label(tr("set.secondary_margin")));
             ui.add(Slider::new(&mut l.secondary_right_margin, 0.0..=400.0));
             ui.end_row();
 
-            ui.label(tr("set.mode"));
+            mark(&focus, "set.mode", &ui.label(tr("set.mode")));
             ComboBox::from_id_salt("embed")
                 .selected_text(if l.embed == EmbedMode::Overlay { tr("set.mode.overlay") } else { tr("set.mode.embedded") })
                 .show_ui(ui, |ui| {
@@ -593,24 +634,32 @@ impl SettingsApp {
 
             ui.label("");
             ui.vertical(|ui| {
-                ui.checkbox(&mut l.lock_position, tr("menu.lock"));
+                mark(&focus, "menu.lock", &ui.checkbox(&mut l.lock_position, tr("menu.lock")));
                 if !l.lock_position {
                     ui.label(RichText::new(tr("set.drag_hint")).weak());
                 }
-                ui.checkbox(&mut l.hide_on_fullscreen, tr("set.hide_fullscreen"));
+                mark(&focus, "set.hide_fullscreen", &ui.checkbox(&mut l.hide_on_fullscreen, tr("set.hide_fullscreen")));
             });
             ui.end_row();
         });
 
         ui.add_space(12.0);
-        ui.heading(tr("set.tray"));
+        mark(&focus, "set.tray", &ui.heading(tr("set.tray")));
         let t = &mut self.settings.tray;
-        ui.checkbox(&mut t.show_icon, tr("set.tray.show"));
+        mark(&focus, "set.tray.show", &ui.checkbox(&mut t.show_icon, tr("set.tray.show")));
         ui.add_enabled_ui(t.show_icon, |ui| {
-            ui.checkbox(&mut t.show_tooltip, tr("set.tray.tooltip"));
+            mark(&focus, "set.tray.tooltip", &ui.checkbox(&mut t.show_tooltip, tr("set.tray.tooltip")));
             ui.horizontal(|ui| {
-                ui.radio_value(&mut t.icon_mode, TrayIconMode::AppIcon, tr("set.tray.app_icon"));
-                ui.radio_value(&mut t.icon_mode, TrayIconMode::Metric, tr("set.tray.metric_icon"));
+                mark(
+                    &focus,
+                    "set.tray.app_icon",
+                    &ui.radio_value(&mut t.icon_mode, TrayIconMode::AppIcon, tr("set.tray.app_icon")),
+                );
+                mark(
+                    &focus,
+                    "set.tray.metric_icon",
+                    &ui.radio_value(&mut t.icon_mode, TrayIconMode::Metric, tr("set.tray.metric_icon")),
+                );
                 if t.icon_mode == TrayIconMode::Metric {
                     ComboBox::from_id_salt("tray_metric").selected_text(kind_name(t.icon_metric)).show_ui(ui, |ui| {
                         for k in MetricKind::ALL.into_iter().filter(|k| {
@@ -627,6 +676,7 @@ impl SettingsApp {
     }
 
     fn metrics(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         ui.label(RichText::new(tr("set.metrics.hint")).weak());
         ui.add_space(6.0);
         let sources = self.sources.lock().unwrap().clone();
@@ -661,8 +711,16 @@ impl SettingsApp {
                         if ui.small_button("▼").clicked() {
                             action = Some((i, 1));
                         }
-                        ui.checkbox(&mut m.show_in_widget, "").on_hover_text(tr("set.show_widget"));
-                        ui.checkbox(&mut m.show_in_flyout, "").on_hover_text(tr("set.show_flyout"));
+                        mark(
+                            &focus,
+                            "set.show_widget",
+                            &ui.checkbox(&mut m.show_in_widget, "").on_hover_text(tr("set.show_widget")),
+                        );
+                        mark(
+                            &focus,
+                            "set.show_flyout",
+                            &ui.checkbox(&mut m.show_in_flyout, "").on_hover_text(tr("set.show_flyout")),
+                        );
                         let name = if m.label.is_empty() {
                             kind_name(m.kind).to_string()
                         } else {
@@ -686,13 +744,13 @@ impl SettingsApp {
             // Details.
             let ui = &mut cols[1];
             let Some(m) = self.settings.metrics.get_mut(self.selected) else {
-                ui.label(tr("set.metrics.empty"));
+                mark(&focus, "set.metrics.empty", &ui.label(tr("set.metrics.empty")));
                 return;
             };
             let mut remove = false;
             let mut duplicate = false;
             egui::Grid::new("metric_detail").num_columns(2).spacing([16.0, 9.0]).show(ui, |ui| {
-                ui.label(tr("set.metric.kind"));
+                mark(&focus, "set.metric.kind", &ui.label(tr("set.metric.kind")));
                 let before = m.kind;
                 ComboBox::from_id_salt("kind").width(220.0).selected_text(kind_name(m.kind)).show_ui(ui, |ui| {
                     for k in MetricKind::ALL {
@@ -707,18 +765,18 @@ impl SettingsApp {
 
                 let source_type = m.kind.def().source_type;
                 if source_type != SourceType::None {
-                    ui.label(tr("set.metric.source"));
+                    mark(&focus, "set.metric.source", &ui.label(tr("set.metric.source")));
                     ui.vertical(|ui| {
                         source_picker(ui, m, source_type, sources.as_ref());
                     });
                     ui.end_row();
                 }
 
-                ui.label(tr("set.metric.label"));
+                mark(&focus, "set.metric.label", &ui.label(tr("set.metric.label")));
                 ui.add(TextEdit::singleline(&mut m.label).hint_text(m.kind.def().default_label).desired_width(160.0));
                 ui.end_row();
 
-                ui.label(tr("set.metric.style"));
+                mark(&focus, "set.metric.style", &ui.label(tr("set.metric.style")));
                 ComboBox::from_id_salt("style").selected_text(style_name(m.style)).show_ui(ui, |ui| {
                     for s in MetricStyle::ALL {
                         ui.selectable_value(&mut m.style, s, style_name(s));
@@ -726,25 +784,29 @@ impl SettingsApp {
                 });
                 ui.end_row();
 
-                ui.label(tr("set.metric.show"));
+                mark(&focus, "set.metric.show", &ui.label(tr("set.metric.show")));
                 ui.vertical(|ui| {
-                    ui.checkbox(&mut m.show_in_widget, tr("set.show_widget"));
-                    ui.checkbox(&mut m.show_in_flyout, tr("set.show_flyout"));
+                    mark(&focus, "set.show_widget", &ui.checkbox(&mut m.show_in_widget, tr("set.show_widget")));
+                    mark(&focus, "set.show_flyout", &ui.checkbox(&mut m.show_in_flyout, tr("set.show_flyout")));
                     ui.horizontal(|ui| {
-                        ui.checkbox(&mut m.show_label, tr("set.metric.show_label"));
-                        ui.checkbox(&mut m.show_value, tr("set.metric.show_value"));
+                        mark(&focus, "set.metric.show_label", &ui.checkbox(&mut m.show_label, tr("set.metric.show_label")));
+                        mark(&focus, "set.metric.show_value", &ui.checkbox(&mut m.show_value, tr("set.metric.show_value")));
                     });
                     if matches!(
                         m.style,
                         MetricStyle::Line | MetricStyle::Area | MetricStyle::Columns | MetricStyle::Ring | MetricStyle::Bar
                     ) {
-                        ui.checkbox(&mut m.overlay_text, tr("set.metric.overlay"));
+                        mark(&focus, "set.metric.overlay", &ui.checkbox(&mut m.overlay_text, tr("set.metric.overlay")));
                     }
-                    ui.checkbox(&mut m.hide_when_unavailable, tr("set.metric.hide_unavailable"));
+                    mark(
+                        &focus,
+                        "set.metric.hide_unavailable",
+                        &ui.checkbox(&mut m.hide_when_unavailable, tr("set.metric.hide_unavailable")),
+                    );
                 });
                 ui.end_row();
 
-                ui.label(tr("set.metric.color"));
+                mark(&focus, "set.metric.color", &ui.label(tr("set.metric.color")));
                 ui.horizontal(|ui| {
                     let mut custom = !m.color.is_empty();
                     if ui.checkbox(&mut custom, tr("set.custom")).changed() {
@@ -756,19 +818,19 @@ impl SettingsApp {
                 });
                 ui.end_row();
 
-                ui.label(tr("set.metric.width"));
+                mark(&focus, "set.metric.width", &ui.label(tr("set.metric.width")));
                 ui.horizontal(|ui| {
                     ui.add(DragValue::new(&mut m.width).range(0.0..=400.0));
                     ui.label(RichText::new(tr("set.zero_auto")).weak());
                 });
                 ui.end_row();
 
-                ui.label(tr("set.metric.decimals"));
+                mark(&focus, "set.metric.decimals", &ui.label(tr("set.metric.decimals")));
                 ui.add(Slider::new(&mut m.decimals, -1..=3).text(tr("set.minus_one_auto")));
                 ui.end_row();
 
                 if m.kind.def().unit != tm_core::metrics::MetricUnit::Percent {
-                    ui.label(tr("set.metric.max"));
+                    mark(&focus, "set.metric.max", &ui.label(tr("set.metric.max")));
                     ui.horizontal(|ui| {
                         ui.add(DragValue::new(&mut m.max_value).range(0.0..=1e12).speed(1024.0));
                         ui.label(RichText::new(tr("set.metric.max_hint")).weak());
@@ -796,12 +858,13 @@ impl SettingsApp {
     }
 
     fn claude(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         ui.label(RichText::new(tr("set.claude.hint")).weak());
         ui.add_space(6.0);
         let c = &mut self.settings.claude;
-        ui.checkbox(&mut c.enabled, tr("set.claude.enabled"));
+        mark(&focus, "set.claude.enabled", &ui.checkbox(&mut c.enabled, tr("set.claude.enabled")));
         egui::Grid::new("claude").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
-            ui.label(tr("set.claude.credentials"));
+            mark(&focus, "set.claude.credentials", &ui.label(tr("set.claude.credentials")));
             ui.vertical(|ui| {
                 let default = resolve_credentials_path("").display().to_string();
                 ui.add(TextEdit::singleline(&mut c.credentials_path).hint_text(&default).desired_width(380.0));
@@ -818,17 +881,17 @@ impl SettingsApp {
             });
             ui.end_row();
 
-            ui.label(tr("set.claude.interval"));
+            mark(&focus, "set.claude.interval", &ui.label(tr("set.claude.interval")));
             ui.add(Slider::new(&mut c.poll_interval_secs, 30..=900).suffix(" s"));
             ui.end_row();
 
             ui.label("");
-            ui.checkbox(&mut c.show_reset_countdown, tr("set.claude.countdown"));
+            mark(&focus, "set.claude.countdown", &ui.checkbox(&mut c.show_reset_countdown, tr("set.claude.countdown")));
             ui.end_row();
         });
         ui.collapsing(tr("set.advanced"), |ui| {
             ui.horizontal(|ui| {
-                ui.label(tr("set.claude.endpoint"));
+                mark(&focus, "set.claude.endpoint", &ui.label(tr("set.claude.endpoint")));
                 ui.add(TextEdit::singleline(&mut c.usage_endpoint).desired_width(380.0));
             });
         });
@@ -876,22 +939,23 @@ impl SettingsApp {
     }
 
     fn hardware(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         let sources = self.sources.lock().unwrap().clone();
         let h = &mut self.settings.hardware;
-        ui.checkbox(&mut h.gpu_sensors, tr("set.hw.gpu_sensors"));
-        ui.checkbox(&mut h.thermal_zones, tr("set.hw.thermal"));
-        ui.checkbox(&mut h.lhm_bridge, tr("set.hw.lhm"));
+        mark(&focus, "set.hw.gpu_sensors", &ui.checkbox(&mut h.gpu_sensors, tr("set.hw.gpu_sensors")));
+        mark(&focus, "set.hw.thermal", &ui.checkbox(&mut h.thermal_zones, tr("set.hw.thermal")));
+        mark(&focus, "set.hw.lhm", &ui.checkbox(&mut h.lhm_bridge, tr("set.hw.lhm")));
         ui.horizontal(|ui| {
             ui.label(RichText::new(tr("set.hw.lhm_hint")).weak());
             ui.hyperlink_to("LibreHardwareMonitor", "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor");
         });
         ui.add_space(6.0);
         egui::Grid::new("hw").num_columns(2).spacing([24.0, 10.0]).show(ui, |ui| {
-            ui.label(tr("set.hw.interval"));
+            mark(&focus, "set.hw.interval", &ui.label(tr("set.hw.interval")));
             ui.add(Slider::new(&mut h.sensor_interval_ms, 500..=10_000).suffix(" ms").step_by(250.0));
             ui.end_row();
 
-            ui.label(tr("set.hw.gpu_display"));
+            mark(&focus, "set.hw.gpu_display", &ui.label(tr("set.hw.gpu_display")));
             ui.vertical(|ui| {
                 for mode in GpuDisplay::ALL {
                     ui.radio_value(&mut h.gpu_display, mode, tr(mode.key()));
@@ -900,7 +964,7 @@ impl SettingsApp {
             ui.end_row();
 
             if h.gpu_display == GpuDisplay::Main {
-                ui.label(tr("set.hw.gpu"));
+                mark(&focus, "set.hw.gpu", &ui.label(tr("set.hw.gpu")));
                 let label =
                     if h.gpu_adapter.is_empty() { tr("set.hw.gpu_most_memory").to_string() } else { h.gpu_adapter.clone() };
                 ComboBox::from_id_salt("gpu_default").width(320.0).selected_text(label).show_ui(ui, |ui| {
@@ -914,7 +978,7 @@ impl SettingsApp {
         });
 
         ui.add_space(10.0);
-        ui.heading(tr("set.hw.gpu_diag"));
+        mark(&focus, "set.hw.gpu_diag", &ui.heading(tr("set.hw.gpu_diag")));
         match &sources {
             None => {
                 ui.spinner();
@@ -958,7 +1022,7 @@ impl SettingsApp {
         }
 
         ui.add_space(10.0);
-        ui.heading(tr("set.hw.detected"));
+        mark(&focus, "set.hw.detected", &ui.heading(tr("set.hw.detected")));
         match &sources {
             None => {
                 ui.spinner();
@@ -989,16 +1053,17 @@ impl SettingsApp {
     }
 
     fn about(&mut self, ui: &mut egui::Ui) {
+        let focus = self.focus.clone();
         ui.heading(format!("Taskbar Monitor {}", env!("CARGO_PKG_VERSION")));
         ui.add_space(6.0);
         egui::Grid::new("about").num_columns(2).spacing([24.0, 8.0]).show(ui, |ui| {
-            ui.label(tr("set.about.mode"));
+            mark(&focus, "set.about.mode", &ui.label(tr("set.about.mode")));
             ui.label(if self.paths.portable { tr("flyout.portable") } else { tr("flyout.installed") });
             ui.end_row();
-            ui.label(tr("set.about.rights"));
+            mark(&focus, "set.about.rights", &ui.label(tr("set.about.rights")));
             ui.label(if self.elevated { tr("flyout.admin") } else { tr("flyout.user") });
             ui.end_row();
-            ui.label(tr("set.about.config"));
+            mark(&focus, "set.about.config", &ui.label(tr("set.about.config")));
             ui.monospace(self.paths.config_file().display().to_string());
             ui.end_row();
         });
@@ -1029,7 +1094,7 @@ impl SettingsApp {
         ui.add_space(16.0);
         if self.confirm_reset {
             ui.horizontal(|ui| {
-                ui.label(tr("set.reset.confirm"));
+                mark(&focus, "set.reset.confirm", &ui.label(tr("set.reset.confirm")));
                 if ui.button(tr("set.yes")).clicked() {
                     self.settings = Settings::default();
                     self.confirm_reset = false;
@@ -1041,6 +1106,161 @@ impl SettingsApp {
         } else if ui.button(tr("set.reset")).clicked() {
             self.confirm_reset = true;
         }
+    }
+}
+
+/// A setting the search jumped to: highlighted for a moment and scrolled into view once.
+#[derive(Clone, Default)]
+struct Focus {
+    key: Option<&'static str>,
+    until: Option<Instant>,
+    scroll: std::rc::Rc<std::cell::Cell<bool>>,
+}
+
+impl Focus {
+    fn new(key: &'static str) -> Self {
+        Self {
+            key: Some(key),
+            until: Some(Instant::now() + Duration::from_millis(2500)),
+            scroll: std::rc::Rc::new(std::cell::Cell::new(true)),
+        }
+    }
+
+    fn active(&self) -> bool {
+        self.until.is_some_and(|u| Instant::now() < u)
+    }
+
+    fn is(&self, key: &str) -> bool {
+        self.active() && self.key == Some(key)
+    }
+}
+
+/// Outlines the widget of the setting the search jumped to.
+fn mark(focus: &Focus, key: &str, response: &egui::Response) {
+    if focus.is(key) {
+        let color = response.ctx.global_style().visuals.selection.bg_fill;
+        response.ctx.layer_painter(response.layer_id).rect_stroke(
+            response.rect.expand(4.0),
+            4.0,
+            egui::Stroke::new(2.0, color),
+            egui::StrokeKind::Outside,
+        );
+        if focus.scroll.replace(false) {
+            response.scroll_to_me(Some(egui::Align::Center));
+        }
+    }
+}
+
+/// Searchable settings: the label key of each and the section it lives in.
+const SEARCH_INDEX: &[(Section, &str)] = &[
+    (Section::General, "set.language"),
+    (Section::General, "set.refresh"),
+    (Section::General, "set.history"),
+    (Section::General, "set.network_unit"),
+    (Section::General, "set.left_click"),
+    (Section::General, "set.double_click"),
+    (Section::General, "set.middle_click"),
+    (Section::General, "menu.autostart"),
+    (Section::Appearance, "set.theme"),
+    (Section::Appearance, "set.text_color"),
+    (Section::Appearance, "set.background"),
+    (Section::Appearance, "set.corner_radius"),
+    (Section::Appearance, "set.font"),
+    (Section::Appearance, "set.bold"),
+    (Section::Appearance, "set.font_size"),
+    (Section::Appearance, "set.label_opacity"),
+    (Section::Appearance, "set.accent"),
+    (Section::Appearance, "set.system_accent"),
+    (Section::Appearance, "set.color_by_category"),
+    (Section::Appearance, "set.thresholds"),
+    (Section::Appearance, "set.use_thresholds"),
+    (Section::Appearance, "set.warn"),
+    (Section::Appearance, "set.crit"),
+    (Section::Appearance, "set.padding"),
+    (Section::Appearance, "set.tile_spacing"),
+    (Section::Appearance, "set.graph_width"),
+    (Section::Appearance, "set.bar_width"),
+    (Section::Layout, "menu.layout"),
+    (Section::Layout, "set.placement"),
+    (Section::Layout, "set.offset"),
+    (Section::Layout, "menu.rows"),
+    (Section::Layout, "set.vertical_margin"),
+    (Section::Layout, "set.monitor"),
+    (Section::Layout, "set.secondary_margin"),
+    (Section::Layout, "set.mode"),
+    (Section::Layout, "menu.lock"),
+    (Section::Layout, "set.hide_fullscreen"),
+    (Section::Layout, "set.tray"),
+    (Section::Layout, "set.tray.show"),
+    (Section::Layout, "set.tray.tooltip"),
+    (Section::Layout, "set.tray.metric_icon"),
+    (Section::Claude, "set.claude.enabled"),
+    (Section::Claude, "set.claude.credentials"),
+    (Section::Claude, "set.claude.interval"),
+    (Section::Claude, "set.claude.countdown"),
+    (Section::Claude, "set.claude.endpoint"),
+    (Section::Hardware, "set.hw.gpu_sensors"),
+    (Section::Hardware, "set.hw.thermal"),
+    (Section::Hardware, "set.hw.lhm"),
+    (Section::Hardware, "set.hw.interval"),
+    (Section::Hardware, "set.hw.gpu_display"),
+    (Section::Hardware, "set.hw.gpu"),
+    (Section::Hardware, "set.hw.gpu_diag"),
+    (Section::About, "set.about.config"),
+    (Section::About, "menu.restart_admin"),
+    (Section::About, "set.reset"),
+];
+
+/// Matches `query` (case-insensitive, every word) against a label in both languages and its section.
+fn search_matches(query: &str, key: &str, section: Section) -> bool {
+    let haystack = [
+        i18n::tr_in(key, i18n::Lang::En),
+        i18n::tr_in(key, i18n::Lang::Ru),
+        i18n::tr_in(section.key(), i18n::Lang::En),
+        i18n::tr_in(section.key(), i18n::Lang::Ru),
+    ]
+    .join(" ")
+    .to_lowercase();
+    query.split_whitespace().all(|word| haystack.contains(&word.to_lowercase()))
+}
+
+/// Search hits: settings plus metric kinds (which open the Metrics section).
+fn search(query: &str) -> Vec<(Section, &'static str)> {
+    if query.trim().is_empty() {
+        return Vec::new();
+    }
+    let mut hits: Vec<(Section, &'static str)> =
+        SEARCH_INDEX.iter().copied().filter(|(sec, key)| search_matches(query, key, *sec)).collect();
+    for kind in MetricKind::ALL {
+        let key = tr_key_static(kind);
+        if search_matches(query, key, Section::Metrics) {
+            hits.push((Section::Metrics, key));
+        }
+    }
+    hits
+}
+
+/// `kind.<name>` as a `'static` key for the search index.
+fn tr_key_static(kind: MetricKind) -> &'static str {
+    match kind {
+        MetricKind::CpuUsage => "kind.cpu_usage",
+        MetricKind::CpuTemp => "kind.cpu_temp",
+        MetricKind::RamUsage => "kind.ram_usage",
+        MetricKind::GpuUsage => "kind.gpu_usage",
+        MetricKind::GpuTemp => "kind.gpu_temp",
+        MetricKind::VramUsage => "kind.vram_usage",
+        MetricKind::NetDown => "kind.net_down",
+        MetricKind::NetUp => "kind.net_up",
+        MetricKind::NetTotal => "kind.net_total",
+        MetricKind::DiskRead => "kind.disk_read",
+        MetricKind::DiskWrite => "kind.disk_write",
+        MetricKind::DiskActive => "kind.disk_active",
+        MetricKind::DiskSpace => "kind.disk_space",
+        MetricKind::ClaudeSession => "kind.claude_session",
+        MetricKind::ClaudeWeekly => "kind.claude_weekly",
+        MetricKind::ClaudeModel => "kind.claude_model",
+        MetricKind::ClaudeExtra => "kind.claude_extra",
+        MetricKind::Sensor => "kind.sensor",
     }
 }
 
@@ -1114,19 +1334,34 @@ impl eframe::App for SettingsApp {
         let ctx = ui.ctx().clone();
         self.apply_theme(&ctx);
         self.poll_jobs();
-        if self.autostart_job.is_some() || self.claude_test.is_some() {
+        if self.autostart_job.is_some() || self.claude_test.is_some() || self.focus.active() {
             ctx.request_repaint_after(Duration::from_millis(100));
         }
 
+        let search_id = egui::Id::unique("settings_search");
+        if ctx.input(|i| i.modifiers.command && i.key_pressed(egui::Key::F)) {
+            ctx.memory_mut(|m| m.request_focus(search_id));
+        }
         egui::Panel::left("nav").resizable(false).exact_size(190.0).show(ui, |ui| {
             ui.add_space(12.0);
             ui.heading("Taskbar Monitor");
-            ui.add_space(12.0);
+            ui.add_space(10.0);
+            let search_box =
+                ui.add(TextEdit::singleline(&mut self.query).id(search_id).hint_text(tr("set.search")).desired_width(170.0));
+            // Enter jumps to the first hit (a single-line edit loses focus on Enter).
+            if search_box.lost_focus()
+                && ui.input(|i| i.key_pressed(egui::Key::Enter))
+                && let Some((section, key)) = search(&self.query).first().copied()
+            {
+                self.jump_to(section, key);
+            }
+            ui.add_space(10.0);
             for s in Section::ALL {
-                let selected = self.section == s;
+                let selected = self.section == s && self.query.trim().is_empty();
                 let text = RichText::new(tr(s.key())).size(15.0);
                 if ui.add_sized([170.0, 30.0], egui::Button::selectable(selected, text)).clicked() {
                     self.section = s;
+                    self.query.clear();
                 }
             }
         });
@@ -1141,8 +1376,16 @@ impl eframe::App for SettingsApp {
                 ui.label(RichText::new(text).weak());
             });
         });
-        egui::CentralPanel::default().show(ui, |ui| {
+        let content_frame =
+            egui::Frame::central_panel(ui.style()).inner_margin(egui::Margin { left: 28, right: 20, top: 8, bottom: 8 });
+        egui::CentralPanel::default().frame(content_frame).show(ui, |ui| {
             ui.add_space(8.0);
+            if !self.query.trim().is_empty() {
+                ui.heading(trf("set.search.results", &[self.query.trim()]));
+                ui.add_space(8.0);
+                ScrollArea::vertical().id_salt("search").auto_shrink([false, false]).show(ui, |ui| self.search_results(ui));
+                return;
+            }
             ui.heading(tr(self.section.key()));
             ui.add_space(8.0);
             ScrollArea::vertical().id_salt(self.section.key()).auto_shrink([false, false]).show(ui, |ui| match self.section {
