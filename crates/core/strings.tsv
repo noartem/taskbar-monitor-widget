@@ -1,0 +1,216 @@
+# key	English	Russian	Chinese (Simplified)	Spanish	French	Portuguese	German  (use \n for line breaks)
+autostart.elevated	As administrator (Task Scheduler)	От администратора (Планировщик заданий)	以管理员身份（任务计划程序）	Como administrador (Programador de tareas)	En tant qu'administrateur (Planificateur de tâches)	Como administrador (Agendador de Tarefas)	Als Administrator (Aufgabenplanung)
+autostart.off	Off	Выключен	关闭	Desactivado	Désactivé	Desativado	Aus
+autostart.user	As current user	От текущего пользователя	以当前用户身份	Como usuario actual	En tant qu'utilisateur actuel	Como usuário atual	Als aktueller Benutzer
+claude.disabled	Claude monitoring is off	Мониторинг Claude выключен	Claude 监控已关闭	La supervisión de Claude está desactivada	La surveillance de Claude est désactivée	O monitoramento do Claude está desativado	Claude-Überwachung ist aus
+claude.error	Request failed	Ошибка запроса	请求失败	La solicitud falló	Échec de la requête	Falha na solicitação	Anfrage fehlgeschlagen
+claude.expired	Token expired: run `claude` once to refresh it	Токен истёк: запустите `claude`, чтобы обновить	令牌已过期：运行一次 `claude` 以刷新	Token caducado: ejecuta `claude` una vez para renovarlo	Jeton expiré : lancez `claude` une fois pour le renouveler	Token expirado: execute `claude` uma vez para renová-lo	Token abgelaufen: `claude` einmal starten, um es zu erneuern
+claude.loading	Loading…	Загрузка…	加载中…	Cargando…	Chargement…	Carregando…	Wird geladen…
+claude.no_credentials	Not logged in: run `claude` and /login	Нет входа: запустите `claude` и выполните /login	未登录：运行 `claude` 并执行 /login	Sin sesión: ejecuta `claude` y /login	Non connecté : lancez `claude` puis /login	Sem login: execute `claude` e /login	Nicht angemeldet: `claude` starten und /login ausführen
+claude.not_available	Not available for this plan	Недоступно для этого тарифа	当前套餐不提供	No disponible en este plan	Non disponible pour cette offre	Indisponível neste plano	In diesem Tarif nicht verfügbar
+claude.ok	OK	OK	正常	OK	OK	OK	OK
+claude.rate_limited	Rate limited, will retry later	Слишком много запросов, повтор позже	请求过多，稍后重试	Demasiadas solicitudes, se reintentará más tarde	Trop de requêtes, nouvel essai plus tard	Muitas solicitações, nova tentativa mais tarde	Zu viele Anfragen, später erneuter Versuch
+claude.stale	Showing last known values	Показаны последние известные значения	显示最近一次已知的值	Mostrando los últimos valores conocidos	Dernières valeurs connues affichées	Exibindo os últimos valores conhecidos	Letzte bekannte Werte werden angezeigt
+claude.unauthorized	Access denied by the usage API	Доступ к API использования запрещён	用量 API 拒绝访问	La API de uso denegó el acceso	Accès refusé par l'API d'utilisation	Acesso negado pela API de uso	Zugriff von der Nutzungs-API verweigert
+click.flyout	Show details	Показать подробности	显示详情	Mostrar detalles	Afficher les détails	Mostrar detalhes	Details anzeigen
+click.none	Nothing	Ничего	无	Nada	Rien	Nada	Nichts
+click.settings	Open settings	Открыть настройки	打开设置	Abrir ajustes	Ouvrir les paramètres	Abrir configurações	Einstellungen öffnen
+click.taskmgr	Open Task Manager	Открыть диспетчер задач	打开任务管理器	Abrir el Administrador de tareas	Ouvrir le Gestionnaire des tâches	Abrir o Gerenciador de Tarefas	Task-Manager öffnen
+click.toggle	Hide/show widget	Скрыть/показать виджет	隐藏/显示小组件	Ocultar/mostrar el widget	Masquer/afficher le widget	Ocultar/mostrar o widget	Widget aus-/einblenden
+dlg.config_broken	config.toml could not be read and was backed up to:\n{0}\n\nError: {1}\n\nDefault settings are used.	Не удалось прочитать config.toml, копия сохранена в:\n{0}\n\nОшибка: {1}\n\nИспользуются настройки по умолчанию.	无法读取 config.toml，已备份到：\n{0}\n\n错误：{1}\n\n将使用默认设置。	No se pudo leer config.toml; se guardó una copia en:\n{0}\n\nError: {1}\n\nSe usan los ajustes predeterminados.	Impossible de lire config.toml ; une copie a été enregistrée dans :\n{0}\n\nErreur : {1}\n\nLes paramètres par défaut sont utilisés.	Não foi possível ler config.toml; uma cópia foi salva em:\n{0}\n\nErro: {1}\n\nAs configurações padrão estão em uso.	config.toml konnte nicht gelesen werden und wurde gesichert nach:\n{0}\n\nFehler: {1}\n\nEs werden die Standardeinstellungen verwendet.
+dlg.elevated_autostart	Starting as administrator at logon requires a one-time confirmation (UAC). Continue?	Для запуска от администратора при входе нужно один раз подтвердить действие (UAC). Продолжить?	登录时以管理员身份启动需要确认一次（UAC）。是否继续？	Iniciar como administrador al iniciar sesión requiere una confirmación única (UAC). ¿Continuar?	Le démarrage en tant qu'administrateur à l'ouverture de session nécessite une confirmation unique (UAC). Continuer ?	Iniciar como administrador no logon exige uma confirmação única (UAC). Continuar?	Der Start als Administrator bei der Anmeldung erfordert eine einmalige Bestätigung (UAC). Fortfahren?
+dlg.error	Error	Ошибка	错误	Error	Erreur	Erro	Fehler
+dlg.restart_admin	Taskbar Monitor will restart with administrator rights.\nWindows will ask for confirmation (UAC).\n\nContinue?	Taskbar Monitor будет перезапущен с правами администратора.\nWindows запросит подтверждение (UAC).\n\nПродолжить?	Taskbar Monitor 将以管理员权限重新启动。\nWindows 会请求确认（UAC）。\n\n是否继续？	Taskbar Monitor se reiniciará con permisos de administrador.\nWindows pedirá confirmación (UAC).\n\n¿Continuar?	Taskbar Monitor va redémarrer avec les droits d'administrateur.\nWindows demandera une confirmation (UAC).\n\nContinuer ?	O Taskbar Monitor será reiniciado com direitos de administrador.\nO Windows pedirá confirmação (UAC).\n\nContinuar?	Taskbar Monitor wird mit Administratorrechten neu gestartet.\nWindows fragt nach einer Bestätigung (UAC).\n\nFortfahren?
+flyout.admin	Administrator	Администратор	管理员	Administrador	Administrateur	Administrador	Administrator
+flyout.installed	installed	установленная	安装版	instalada	installée	instalada	installiert
+flyout.no_metrics	No metrics are enabled for the details view.	Для окна подробностей не выбрано ни одной метрики.	详情视图中没有启用任何指标。	No hay métricas activadas para la vista de detalles.	Aucune métrique n'est activée pour la vue détaillée.	Nenhuma métrica está ativada para a visão de detalhes.	Für die Detailansicht sind keine Messwerte aktiviert.
+flyout.plan	Plan: {0}	Тариф: {0}	套餐：{0}	Plan: {0}	Offre : {0}	Plano: {0}	Tarif: {0}
+flyout.portable	portable	портативная	便携版	portátil	portable	portátil	portabel
+flyout.resets	resets in {0}	сброс через {0}	{0} 后重置	se restablece en {0}	réinitialisation dans {0}	reinicia em {0}	Zurücksetzung in {0}
+flyout.settings	Settings	Настройки	设置	Ajustes	Paramètres	Configurações	Einstellungen
+flyout.updated	updated {0} ago	обновлено {0} назад	{0} 前更新	actualizado hace {0}	mis à jour il y a {0}	atualizado há {0}	vor {0} aktualisiert
+flyout.user	Standard user	Обычный пользователь	标准用户	Usuario estándar	Utilisateur standard	Usuário padrão	Standardbenutzer
+gpu.all	All GPUs (a tile for each)	Все GPU (плитка на каждую)	所有 GPU（每个一个磁贴）	Todas las GPU (un mosaico para cada una)	Tous les GPU (une tuile chacun)	Todas as GPUs (um bloco para cada)	Alle GPUs (je eine Kachel)
+gpu.busiest	Busiest GPU right now	Самая загруженная GPU	当前最忙的 GPU	La GPU más ocupada ahora	Le GPU le plus occupé actuellement	A GPU mais ocupada no momento	Aktuell am stärksten ausgelastete GPU
+gpu.main	Most powerful GPU (or the chosen one)	Самая мощная GPU (или выбранная)	性能最强的 GPU（或所选 GPU）	La GPU más potente (o la elegida)	Le GPU le plus puissant (ou celui choisi)	A GPU mais potente (ou a escolhida)	Leistungsstärkste GPU (oder die ausgewählte)
+kind.claude_extra	Claude: extra usage	Claude: доп. использование	Claude：额外用量	Claude: uso adicional	Claude : utilisation supplémentaire	Claude: uso adicional	Claude: Zusatznutzung
+kind.claude_model	Claude: model week (Fable/Opus…)	Claude: неделя модели (Fable/Opus…)	Claude：模型周用量 (Fable/Opus…)	Claude: semana del modelo (Fable/Opus…)	Claude : semaine du modèle (Fable/Opus…)	Claude: semana do modelo (Fable/Opus…)	Claude: Modell-Woche (Fable/Opus…)
+kind.claude_session	Claude: session (5h)	Claude: сессия (5ч)	Claude：会话 (5小时)	Claude: sesión (5 h)	Claude : session (5 h)	Claude: sessão (5 h)	Claude: Sitzung (5 h)
+kind.claude_weekly	Claude: week (7d)	Claude: неделя (7д)	Claude：本周 (7天)	Claude: semana (7 d)	Claude : semaine (7 j)	Claude: semana (7 d)	Claude: Woche (7 T)
+kind.cpu_temp	CPU temperature	Температура CPU	CPU 温度	Temperatura de la CPU	Température du CPU	Temperatura da CPU	CPU-Temperatur
+kind.cpu_usage	CPU usage	Загрузка CPU	CPU 使用率	Uso de CPU	Utilisation du CPU	Uso da CPU	CPU-Auslastung
+kind.disk_active	Disk active time	Активность диска	磁盘活动时间	Tiempo activo del disco	Temps d'activité du disque	Tempo ativo do disco	Aktive Datenträgerzeit
+kind.disk_read	Disk read	Диск: чтение	磁盘读取	Lectura de disco	Lecture disque	Leitura de disco	Datenträger lesen
+kind.disk_space	Disk space	Место на диске	磁盘空间	Espacio en disco	Espace disque	Espaço em disco	Speicherplatz
+kind.disk_write	Disk write	Диск: запись	磁盘写入	Escritura de disco	Écriture disque	Gravação de disco	Datenträger schreiben
+kind.gpu_temp	GPU temperature	Температура GPU	GPU 温度	Temperatura de la GPU	Température du GPU	Temperatura da GPU	GPU-Temperatur
+kind.gpu_usage	GPU usage	Загрузка GPU	GPU 使用率	Uso de GPU	Utilisation du GPU	Uso da GPU	GPU-Auslastung
+kind.net_down	Network download	Сеть: загрузка	网络下载	Red: descarga	Réseau : réception	Rede: download	Netzwerk: Download
+kind.net_total	Network total	Сеть: всего	网络总量	Red: total	Réseau : total	Rede: total	Netzwerk: gesamt
+kind.net_up	Network upload	Сеть: отдача	网络上传	Red: subida	Réseau : envoi	Rede: upload	Netzwerk: Upload
+kind.ram_usage	RAM usage	Использование RAM	内存使用率	Uso de RAM	Utilisation de la RAM	Uso de RAM	RAM-Auslastung
+kind.sensor	Hardware sensor	Датчик оборудования	硬件传感器	Sensor de hardware	Capteur matériel	Sensor de hardware	Hardwaresensor
+kind.vram_usage	VRAM usage	Использование VRAM	显存使用率	Uso de VRAM	Utilisation de la VRAM	Uso de VRAM	VRAM-Auslastung
+menu.autostart	Start with Windows	Запуск вместе с Windows	随 Windows 启动	Iniciar con Windows	Démarrer avec Windows	Iniciar com o Windows	Mit Windows starten
+menu.details	Details	Подробности	详情	Detalles	Détails	Detalhes	Details
+menu.exit	Exit	Выход	退出	Salir	Quitter	Sair	Beenden
+menu.gpu	GPU	GPU	GPU	GPU	GPU	GPU	GPU
+menu.layout	Layout	Раскладка	布局	Diseño	Disposition	Layout	Layout
+menu.lock	Lock position	Закрепить положение	锁定位置	Bloquear posición	Verrouiller la position	Travar posição	Position sperren
+menu.open_config	Open config.toml	Открыть config.toml	打开 config.toml	Abrir config.toml	Ouvrir config.toml	Abrir config.toml	config.toml öffnen
+menu.open_folder	Open data folder	Открыть папку с данными	打开数据文件夹	Abrir carpeta de datos	Ouvrir le dossier de données	Abrir pasta de dados	Datenordner öffnen
+menu.refresh_claude	Refresh Claude usage	Обновить данные Claude	刷新 Claude 用量	Actualizar uso de Claude	Actualiser l'utilisation de Claude	Atualizar uso do Claude	Claude-Nutzung aktualisieren
+menu.restart_admin	Restart as administrator…	Перезапустить от имени администратора…	以管理员身份重新启动…	Reiniciar como administrador…	Redémarrer en tant qu'administrateur…	Reiniciar como administrador…	Als Administrator neu starten…
+menu.rows	Rows	Строки	行数	Filas	Lignes	Linhas	Zeilen
+menu.running_admin	Running as administrator	Запущено от имени администратора	正以管理员身份运行	Ejecutándose como administrador	Exécuté en tant qu'administrateur	Executando como administrador	Läuft als Administrator
+menu.settings	Settings…	Настройки…	设置…	Ajustes…	Paramètres…	Configurações…	Einstellungen…
+menu.show_widget	Show widget	Показывать виджет	显示小组件	Mostrar widget	Afficher le widget	Mostrar widget	Widget anzeigen
+preset.claude	Claude only	Только Claude	仅 Claude	Solo Claude	Claude uniquement	Somente Claude	Nur Claude
+preset.compact	Compact text, 1 row	Компактный текст, 1 строка	紧凑文本，1 行	Texto compacto, 1 fila	Texte compact, 1 ligne	Texto compacto, 1 linha	Kompakter Text, 1 Zeile
+preset.dense	Dense, 3 rows	Плотно, 3 строки	密集，3 行	Denso, 3 filas	Dense, 3 lignes	Denso, 3 linhas	Dicht, 3 Zeilen
+preset.graphs	Graphs (default)	Графики (по умолчанию)	图表（默认）	Gráficos (predeterminado)	Graphiques (par défaut)	Gráficos (padrão)	Diagramme (Standard)
+preset.minimal	Minimal fills	Минимализм (заливки)	极简填充	Rellenos mínimos	Remplissages minimalistes	Preenchimentos mínimos	Minimale Füllungen
+preset.rings	Rings	Кольца	圆环	Anillos	Anneaux	Anéis	Ringe
+set.about.admin_hint	Administrator rights let the widget read ACPI temperature sensors and start at logon without a UAC prompt.	Права администратора позволяют читать температурные датчики ACPI и запускаться при входе без запроса UAC.	管理员权限可读取 ACPI 温度传感器，并在登录时无需 UAC 提示即可启动。	Los permisos de administrador permiten leer los sensores de temperatura ACPI e iniciar al iniciar sesión sin aviso de UAC.	Les droits d'administrateur permettent de lire les capteurs de température ACPI et de démarrer à l'ouverture de session sans invite UAC.	Direitos de administrador permitem ler os sensores de temperatura ACPI e iniciar no logon sem aviso do UAC.	Mit Administratorrechten lassen sich ACPI-Temperatursensoren lesen und das Widget startet bei der Anmeldung ohne UAC-Abfrage.
+set.about.config	Config file	Файл настроек	配置文件	Archivo de configuración	Fichier de configuration	Arquivo de configuração	Konfigurationsdatei
+set.about.mode	Edition	Вариант	版本类型	Edición	Édition	Edição	Variante
+set.about.rights	Rights	Права	权限	Permisos	Droits	Permissões	Rechte
+set.accent	Accent color	Акцентный цвет	强调色	Color de énfasis	Couleur d'accentuation	Cor de destaque	Akzentfarbe
+set.add	Add	Добавить	添加	Añadir	Ajouter	Adicionar	Hinzufügen
+set.advanced	Advanced	Дополнительно	高级	Avanzado	Avancé	Avançado	Erweitert
+set.auto	Automatic	Автоматически	自动	Automático	Automatique	Automático	Automatisch
+set.autostart.cancelled	Cancelled	Отменено	已取消	Cancelado	Annulé	Cancelado	Abgebrochen
+set.autostart.hint	"As administrator" registers a Task Scheduler task and asks for UAC confirmation once.	«От администратора» создаёт задание в Планировщике и один раз запрашивает подтверждение UAC.	“以管理员身份”会注册一个任务计划程序任务，并请求一次 UAC 确认。	«Como administrador» registra una tarea en el Programador de tareas y pide confirmación UAC una vez.	« En tant qu'administrateur » crée une tâche dans le Planificateur et demande une confirmation UAC une seule fois.	"Como administrador" registra uma tarefa no Agendador de Tarefas e pede confirmação do UAC uma vez.	„Als Administrator“ legt eine Aufgabe in der Aufgabenplanung an und fragt einmalig nach einer UAC-Bestätigung.
+set.background	Background	Фон	背景	Fondo	Arrière-plan	Fundo	Hintergrund
+set.bar_width	Bar width	Ширина полосы	条形宽度	Ancho de barra	Largeur de barre	Largura da barra	Balkenbreite
+set.bold	Bold values	Жирные значения	数值加粗	Valores en negrita	Valeurs en gras	Valores em negrito	Werte fett
+set.claude.countdown	Show time until reset	Показывать время до сброса	显示距重置的时间	Mostrar tiempo hasta el restablecimiento	Afficher le temps avant réinitialisation	Mostrar tempo até reiniciar	Zeit bis zur Zurücksetzung anzeigen
+set.claude.credentials	Credentials file	Файл учётных данных	凭据文件	Archivo de credenciales	Fichier d'identifiants	Arquivo de credenciais	Anmeldedatei
+set.claude.enabled	Monitor Claude Code subscription usage	Отслеживать использование подписки Claude Code	监控 Claude Code 订阅用量	Supervisar el uso de la suscripción de Claude Code	Surveiller l'utilisation de l'abonnement Claude Code	Monitorar o uso da assinatura do Claude Code	Nutzung des Claude-Code-Abos überwachen
+set.claude.endpoint	Usage endpoint	Адрес API использования	用量接口地址	Endpoint de uso	Point de terminaison d'utilisation	Endpoint de uso	Nutzungs-Endpunkt
+set.claude.hint	Reads the OAuth token that Claude Code (CLI) stores after /login and asks Anthropic for the same limits /usage shows: 5-hour session, 7-day week and per-model weekly limits (Fable, Opus…) when your plan has them. The token never leaves your machine except to that endpoint.	Использует OAuth-токен, который Claude Code (CLI) сохраняет после /login, и запрашивает у Anthropic те же лимиты, что показывает /usage: сессия 5 ч, неделя 7 д и недельные лимиты по моделям (Fable, Opus…), если они есть в тарифе. Токен никуда, кроме этого адреса, не отправляется.	读取 Claude Code (CLI) 在 /login 后保存的 OAuth 令牌，并向 Anthropic 查询与 /usage 相同的限额：5 小时会话、7 天周限额，以及套餐包含时的各模型周限额（Fable、Opus…）。令牌只会发送到该接口，不会离开你的电脑去往别处。	Lee el token OAuth que Claude Code (CLI) guarda tras /login y consulta a Anthropic los mismos límites que muestra /usage: sesión de 5 horas, semana de 7 días y límites semanales por modelo (Fable, Opus…) si tu plan los tiene. El token solo se envía a ese endpoint.	Lit le jeton OAuth que Claude Code (CLI) enregistre après /login et demande à Anthropic les mêmes limites que /usage : session de 5 heures, semaine de 7 jours et limites hebdomadaires par modèle (Fable, Opus…) si votre offre les inclut. Le jeton n'est envoyé qu'à ce point de terminaison.	Lê o token OAuth que o Claude Code (CLI) salva após /login e consulta na Anthropic os mesmos limites mostrados por /usage: sessão de 5 horas, semana de 7 dias e limites semanais por modelo (Fable, Opus…) se o seu plano os tiver. O token só é enviado a esse endpoint.	Liest das OAuth-Token, das Claude Code (CLI) nach /login speichert, und fragt bei Anthropic dieselben Limits ab wie /usage: 5-Stunden-Sitzung, 7-Tage-Woche und Wochenlimits pro Modell (Fable, Opus…), sofern Ihr Tarif sie hat. Das Token wird nur an diesen Endpunkt gesendet.
+set.claude.interval	Poll interval	Интервал опроса	轮询间隔	Intervalo de consulta	Intervalle d'interrogation	Intervalo de consulta	Abfrageintervall
+set.claude.test	Check now	Проверить сейчас	立即检查	Comprobar ahora	Vérifier maintenant	Verificar agora	Jetzt prüfen
+set.color_by_category	Color by category (CPU, GPU, memory, network, disk, Claude)	Цвет по категории (CPU, GPU, память, сеть, диск, Claude)	按类别着色（CPU、GPU、内存、网络、磁盘、Claude）	Color por categoría (CPU, GPU, memoria, red, disco, Claude)	Couleur par catégorie (CPU, GPU, mémoire, réseau, disque, Claude)	Cor por categoria (CPU, GPU, memória, rede, disco, Claude)	Farbe nach Kategorie (CPU, GPU, Speicher, Netzwerk, Datenträger, Claude)
+set.corner_radius	Corner radius	Скругление углов	圆角半径	Radio de esquinas	Rayon des coins	Raio dos cantos	Eckenradius
+set.crit	Critical from	Критично от	严重阈值	Crítico desde	Critique à partir de	Crítico a partir de	Kritisch ab
+set.custom	Custom	Свой	自定义	Personalizado	Personnalisé	Personalizado	Benutzerdefiniert
+set.double_click	Double click	Двойной клик	双击	Doble clic	Double-clic	Clique duplo	Doppelklick
+set.drag_hint	Drag the widget along the taskbar, then lock it again.	Перетащите виджет вдоль панели задач и снова закрепите.	沿任务栏拖动小组件，然后重新锁定。	Arrastra el widget a lo largo de la barra de tareas y vuelve a bloquearlo.	Faites glisser le widget le long de la barre des tâches, puis verrouillez-le de nouveau.	Arraste o widget ao longo da barra de tarefas e trave-o novamente.	Ziehen Sie das Widget entlang der Taskleiste und sperren Sie es danach wieder.
+set.duplicate	Duplicate	Дублировать	复制	Duplicar	Dupliquer	Duplicar	Duplizieren
+set.font	Font family	Шрифт	字体	Fuente	Police	Fonte	Schriftart
+set.font_size	Font size	Размер шрифта	字号	Tamaño de fuente	Taille de police	Tamanho da fonte	Schriftgröße
+set.graph_width	Graph width	Ширина графика	图表宽度	Ancho de gráfico	Largeur du graphique	Largura do gráfico	Diagrammbreite
+set.hide_fullscreen	Hide while a full-screen app is active	Скрывать при полноэкранных приложениях	全屏应用运行时隐藏	Ocultar con aplicaciones a pantalla completa	Masquer pendant les applications plein écran	Ocultar com aplicativos em tela cheia	Bei Vollbild-Apps ausblenden
+set.history	Graph history	История графиков	图表历史	Historial de gráficos	Historique des graphiques	Histórico dos gráficos	Diagrammverlauf
+set.hw.add_sensor_hint	Press + to add a sensor as a metric:	Нажмите +, чтобы добавить датчик как метрику:	按 + 将传感器添加为指标：	Pulsa + para añadir un sensor como métrica:	Appuyez sur + pour ajouter un capteur comme métrique :	Pressione + para adicionar um sensor como métrica:	Mit + einen Sensor als Messwert hinzufügen:
+set.hw.copied	Copied to clipboard	Скопировано в буфер обмена	已复制到剪贴板	Copiado al portapapeles	Copié dans le presse-papiers	Copiado para a área de transferência	In die Zwischenablage kopiert
+set.hw.copy_diag	Copy diagnostics	Скопировать диагностику	复制诊断信息	Copiar diagnóstico	Copier le diagnostic	Copiar diagnóstico	Diagnose kopieren
+set.hw.detected	Detected hardware	Найденное оборудование	检测到的硬件	Hardware detectado	Matériel détecté	Hardware detectado	Erkannte Hardware
+set.hw.gpu	Default GPU	GPU по умолчанию	默认 GPU	GPU predeterminada	GPU par défaut	GPU padrão	Standard-GPU
+set.hw.gpu_diag	GPU diagnostics	Диагностика GPU	GPU 诊断	Diagnóstico de GPU	Diagnostic GPU	Diagnóstico de GPU	GPU-Diagnose
+set.hw.gpu_display	Show GPUs	Показывать GPU	显示的 GPU	Mostrar GPU	GPU affichés	Mostrar GPUs	Angezeigte GPUs
+set.hw.gpu_most_memory	Automatic: most video memory	Авто: больше всего видеопамяти	自动：显存最多	Automático: más memoria de vídeo	Automatique : le plus de mémoire vidéo	Automático: mais memória de vídeo	Automatisch: meister Grafikspeicher
+set.hw.gpu_sensors	GPU temperature and fan from the display driver (no admin rights needed)	Температура и вентилятор GPU из драйвера (права администратора не нужны)	从显卡驱动读取 GPU 温度和风扇（无需管理员权限）	Temperatura y ventilador de la GPU desde el controlador (sin permisos de administrador)	Température et ventilateur du GPU depuis le pilote (sans droits d'administrateur)	Temperatura e ventoinha da GPU pelo driver (sem direitos de administrador)	GPU-Temperatur und Lüfter vom Grafiktreiber (ohne Administratorrechte)
+set.hw.interval	Sensor interval	Интервал датчиков	传感器间隔	Intervalo de sensores	Intervalle des capteurs	Intervalo dos sensores	Sensorintervall
+set.hw.lhm	Read all sensors from LibreHardwareMonitor / OpenHardwareMonitor when it runs	Читать все датчики из LibreHardwareMonitor / OpenHardwareMonitor, если он запущен	运行时读取 LibreHardwareMonitor / OpenHardwareMonitor 的所有传感器	Leer todos los sensores de LibreHardwareMonitor / OpenHardwareMonitor si está en ejecución	Lire tous les capteurs de LibreHardwareMonitor / OpenHardwareMonitor s'il est lancé	Ler todos os sensores do LibreHardwareMonitor / OpenHardwareMonitor quando estiver em execução	Alle Sensoren von LibreHardwareMonitor / OpenHardwareMonitor lesen, wenn es läuft
+set.hw.lhm_hint	For CPU package temperature, clocks, fans and voltages run	Для температуры CPU, частот, вентиляторов и напряжений запустите	如需 CPU 封装温度、频率、风扇和电压，请运行	Para la temperatura del encapsulado de la CPU, frecuencias, ventiladores y voltajes, ejecuta	Pour la température du CPU, les fréquences, les ventilateurs et les tensions, lancez	Para temperatura do encapsulamento da CPU, frequências, ventoinhas e tensões, execute	Für CPU-Package-Temperatur, Takt, Lüfter und Spannungen starten Sie
+set.hw.no_lhm	LibreHardwareMonitor is not running — only built-in sensors are available.	LibreHardwareMonitor не запущен — доступны только встроенные датчики.	LibreHardwareMonitor 未运行，仅可使用内置传感器。	LibreHardwareMonitor no está en ejecución: solo hay sensores integrados.	LibreHardwareMonitor n'est pas lancé : seuls les capteurs intégrés sont disponibles.	O LibreHardwareMonitor não está em execução: apenas sensores integrados disponíveis.	LibreHardwareMonitor läuft nicht – nur integrierte Sensoren sind verfügbar.
+set.hw.refresh	Refresh	Обновить	刷新	Actualizar	Actualiser	Atualizar	Aktualisieren
+set.hw.sensors	Sensors	Датчики	传感器	Sensores	Capteurs	Sensores	Sensoren
+set.hw.thermal	CPU temperature from ACPI thermal zones	Температура CPU из термозон ACPI	从 ACPI 温度区域读取 CPU 温度	Temperatura de la CPU desde las zonas térmicas ACPI	Température du CPU depuis les zones thermiques ACPI	Temperatura da CPU pelas zonas térmicas ACPI	CPU-Temperatur aus ACPI-Thermalzonen
+set.label_opacity	Label opacity	Прозрачность подписей	标签不透明度	Opacidad de etiquetas	Opacité des libellés	Opacidade dos rótulos	Deckkraft der Beschriftungen
+set.language	Language	Язык	语言	Idioma	Langue	Idioma	Sprache
+set.language.auto	System	Системный	系统	Sistema	Système	Sistema	System
+set.left_click	Click	Клик	单击	Clic	Clic	Clique	Klick
+set.live	Changes are applied automatically	Изменения применяются автоматически	更改会自动应用	Los cambios se aplican automáticamente	Les modifications s'appliquent automatiquement	As alterações são aplicadas automaticamente	Änderungen werden automatisch übernommen
+set.metric.color	Color	Цвет	颜色	Color	Couleur	Cor	Farbe
+set.metric.decimals	Decimals	Знаков после запятой	小数位数	Decimales	Décimales	Casas decimais	Nachkommastellen
+set.metric.hide_unavailable	Hide when there is no data	Скрывать, если нет данных	无数据时隐藏	Ocultar si no hay datos	Masquer en l'absence de données	Ocultar quando não houver dados	Ausblenden, wenn keine Daten vorliegen
+set.metric.kind	Metric	Метрика	指标	Métrica	Métrique	Métrica	Messwert
+set.metric.label	Label	Подпись	标签	Etiqueta	Libellé	Rótulo	Beschriftung
+set.metric.max	Scale maximum	Максимум шкалы	刻度最大值	Máximo de la escala	Maximum de l'échelle	Máximo da escala	Skalenmaximum
+set.metric.max_hint	bytes/s or units; 0 = automatic	байт/с или единицы; 0 = авто	字节/秒或单位；0 = 自动	bytes/s o unidades; 0 = automático	octets/s ou unités ; 0 = automatique	bytes/s ou unidades; 0 = automático	Bytes/s oder Einheiten; 0 = automatisch
+set.metric.overlay	Text over the graph	Текст поверх графика	文字叠加在图表上	Texto sobre el gráfico	Texte par-dessus le graphique	Texto sobre o gráfico	Text über dem Diagramm
+set.metric.show	Show	Показывать	显示	Mostrar	Afficher	Mostrar	Anzeigen
+set.metric.show_label	Label	Подпись	标签	Etiqueta	Libellé	Rótulo	Beschriftung
+set.metric.show_value	Value	Значение	数值	Valor	Valeur	Valor	Wert
+set.metric.source	Source	Источник	来源	Origen	Source	Origem	Quelle
+set.metric.style	View	Вид	样式	Vista	Affichage	Visualização	Darstellung
+set.metric.width	Graph/bar width	Ширина графика/полосы	图表/条形宽度	Ancho de gráfico/barra	Largeur du graphique/de la barre	Largura do gráfico/barra	Breite von Diagramm/Balken
+set.metrics.columns	▲▼ order · ☑ widget · ☑ details	▲▼ порядок · ☑ виджет · ☑ подробности	▲▼ 顺序 · ☑ 小组件 · ☑ 详情	▲▼ orden · ☑ widget · ☑ detalles	▲▼ ordre · ☑ widget · ☑ détails	▲▼ ordem · ☑ widget · ☑ detalhes	▲▼ Reihenfolge · ☑ Widget · ☑ Details
+set.metrics.empty	No metrics. Add one on the left.	Нет метрик. Добавьте слева.	没有指标。请在左侧添加。	No hay métricas. Añade una a la izquierda.	Aucune métrique. Ajoutez-en une à gauche.	Nenhuma métrica. Adicione uma à esquerda.	Keine Messwerte. Links einen hinzufügen.
+set.metrics.hint	Order, visibility and look of every tile. Tiles fill columns top to bottom.	Порядок, видимость и вид каждой плитки. Плитки заполняют столбцы сверху вниз.	每个磁贴的顺序、可见性和外观。磁贴按列自上而下排列。	Orden, visibilidad y aspecto de cada mosaico. Los mosaicos llenan las columnas de arriba abajo.	Ordre, visibilité et apparence de chaque tuile. Les tuiles remplissent les colonnes de haut en bas.	Ordem, visibilidade e aparência de cada bloco. Os blocos preenchem as colunas de cima para baixo.	Reihenfolge, Sichtbarkeit und Aussehen jeder Kachel. Kacheln füllen die Spalten von oben nach unten.
+set.middle_click	Middle click	Средняя кнопка	中键单击	Clic central	Clic du milieu	Clique do meio	Mittelklick
+set.minus_one_auto	-1 = auto	-1 = авто	-1 = 自动	-1 = automático	-1 = automatique	-1 = automático	-1 = automatisch
+set.mode	Mode	Режим	模式	Modo	Mode	Modo	Modus
+set.mode.embedded	Embedded in taskbar (experimental)	Встроить в панель задач (экспериментально)	嵌入任务栏（实验性）	Integrado en la barra de tareas (experimental)	Intégré à la barre des tâches (expérimental)	Integrado à barra de tarefas (experimental)	In die Taskleiste eingebettet (experimentell)
+set.mode.overlay	Over the taskbar	Поверх панели задач	覆盖在任务栏上	Sobre la barra de tareas	Par-dessus la barre des tâches	Sobre a barra de tarefas	Über der Taskleiste
+set.monitor	Monitors	Мониторы	显示器	Monitores	Écrans	Monitores	Monitore
+set.monitor.all	All taskbars	Все панели задач	所有任务栏	Todas las barras de tareas	Toutes les barres des tâches	Todas as barras de tarefas	Alle Taskleisten
+set.monitor.primary	Primary	Основной	主显示器	Principal	Principal	Principal	Hauptmonitor
+set.monitor.specific	Monitor #	Монитор №	显示器 #	Monitor n.º	Écran n°	Monitor nº	Monitor Nr.
+set.network_unit	Network units	Единицы сети	网络单位	Unidades de red	Unités réseau	Unidades de rede	Netzwerkeinheiten
+set.no	No	Нет	否	No	Non	Não	Nein
+set.offset	Offset	Смещение	偏移	Desplazamiento	Décalage	Deslocamento	Versatz
+set.opacity	opacity	непрозрачность	不透明度	opacidad	opacité	opacidade	Deckkraft
+set.padding	Padding	Внутренний отступ	内边距	Relleno	Marge intérieure	Preenchimento	Innenabstand
+set.pending	Saving…	Сохранение…	正在保存…	Guardando…	Enregistrement…	Salvando…	Wird gespeichert…
+set.placement	Position	Положение	位置	Posición	Position	Posição	Position
+set.placement.center	Center	По центру	居中	Centro	Centre	Centro	Mitte
+set.placement.left	Left edge	Слева	左侧	Borde izquierdo	Bord gauche	Borda esquerda	Linker Rand
+set.placement.tray	Next to the tray	Рядом с треем	托盘旁边	Junto a la bandeja	À côté de la zone de notification	Ao lado da bandeja	Neben dem Infobereich
+set.presets.hint	A preset replaces the metric list and row count.	Пресет заменяет список метрик и число строк.	预设会替换指标列表和行数。	Un preajuste reemplaza la lista de métricas y el número de filas.	Un préréglage remplace la liste des métriques et le nombre de lignes.	Uma predefinição substitui a lista de métricas e o número de linhas.	Eine Vorlage ersetzt die Messwertliste und die Zeilenanzahl.
+set.refresh	Refresh interval	Интервал обновления	刷新间隔	Intervalo de actualización	Intervalle d'actualisation	Intervalo de atualização	Aktualisierungsintervall
+set.remove	Remove	Удалить	删除	Eliminar	Supprimer	Remover	Entfernen
+set.reset	Reset all settings	Сбросить все настройки	重置所有设置	Restablecer todos los ajustes	Réinitialiser tous les paramètres	Redefinir todas as configurações	Alle Einstellungen zurücksetzen
+set.reset.confirm	Reset everything to defaults?	Сбросить всё по умолчанию?	将所有内容恢复为默认值？	¿Restablecer todo a los valores predeterminados?	Tout réinitialiser aux valeurs par défaut ?	Redefinir tudo para o padrão?	Alles auf Standardwerte zurücksetzen?
+set.samples	samples	точек	个采样点	muestras	échantillons	amostras	Messpunkte
+set.saved	Saved	Сохранено	已保存	Guardado	Enregistré	Salvo	Gespeichert
+set.search	Search (Ctrl+F)	Поиск (Ctrl+F)	搜索 (Ctrl+F)	Buscar (Ctrl+F)	Rechercher (Ctrl+F)	Pesquisar (Ctrl+F)	Suchen (Strg+F)
+set.search.none	Nothing found	Ничего не найдено	未找到结果	No se encontró nada	Aucun résultat	Nada encontrado	Nichts gefunden
+set.search.results	Search: {0}	Поиск: {0}	搜索：{0}	Búsqueda: {0}	Recherche : {0}	Pesquisa: {0}	Suche: {0}
+set.secondary_margin	Clock space on other monitors	Место под часы на других мониторах	其他显示器上为时钟预留的空间	Espacio para el reloj en otros monitores	Espace pour l'horloge sur les autres écrans	Espaço para o relógio em outros monitores	Platz für die Uhr auf anderen Monitoren
+set.section.about	About	О программе	关于	Acerca de	À propos	Sobre	Info
+set.section.appearance	Appearance	Внешний вид	外观	Apariencia	Apparence	Aparência	Darstellung
+set.section.claude	Claude Code	Claude Code	Claude Code	Claude Code	Claude Code	Claude Code	Claude Code
+set.section.general	General	Общие	常规	General	Général	Geral	Allgemein
+set.section.hardware	Hardware	Оборудование	硬件	Hardware	Matériel	Hardware	Hardware
+set.section.layout	Layout	Раскладка	布局	Diseño	Disposition	Layout	Layout
+set.section.metrics	Metrics	Метрики	指标	Métricas	Métriques	Métricas	Messwerte
+set.show_flyout	Details	Подробности	详情	Detalles	Détails	Detalhes	Details
+set.show_widget	Widget	Виджет	小组件	Widget	Widget	Widget	Widget
+set.source.all_adapters	All adapters	Все адаптеры	所有适配器	Todos los adaptadores	Toutes les cartes	Todos os adaptadores	Alle Adapter
+set.source.claude_hint	Empty = automatic: Fable, then Opus, then Sonnet — whichever your plan has.	Пусто = авто: Fable, затем Opus, затем Sonnet — что есть в вашем тарифе.	留空 = 自动：依次为 Fable、Opus、Sonnet，取你的套餐中有的那个。	Vacío = automático: Fable, luego Opus, luego Sonnet, el que tenga tu plan.	Vide = automatique : Fable, puis Opus, puis Sonnet, selon votre offre.	Vazio = automático: Fable, depois Opus, depois Sonnet, o que o seu plano tiver.	Leer = automatisch: Fable, dann Opus, dann Sonnet – je nachdem, was Ihr Tarif hat.
+set.source.custom	or type a value	или введите значение	或输入一个值	o escribe un valor	ou saisissez une valeur	ou digite um valor	oder einen Wert eingeben
+set.source.disk_hint	Empty = all disks (_Total).	Пусто = все диски (_Total).	留空 = 所有磁盘 (_Total)。	Vacío = todos los discos (_Total).	Vide = tous les disques (_Total).	Vazio = todos os discos (_Total).	Leer = alle Datenträger (_Total).
+set.source.gpu_hint	Empty = GPU with the most video memory (on laptops usually the discrete one, 0% while idle); * = busiest GPU.	Пусто = GPU с наибольшей видеопамятью (на ноутбуке обычно дискретная, в простое 0%); * = самая загруженная GPU.	留空 = 显存最多的 GPU（笔记本上通常是独立显卡，空闲时为 0%）；* = 最忙的 GPU。	Vacío = la GPU con más memoria de vídeo (en portátiles suele ser la dedicada, 0 % en reposo); * = la GPU más ocupada.	Vide = le GPU avec le plus de mémoire vidéo (sur portable, souvent le GPU dédié, 0 % au repos) ; * = le GPU le plus occupé.	Vazio = a GPU com mais memória de vídeo (em notebooks geralmente a dedicada, 0% ociosa); * = a GPU mais ocupada.	Leer = GPU mit dem meisten Grafikspeicher (bei Notebooks meist die dedizierte, im Leerlauf 0 %); * = am stärksten ausgelastete GPU.
+set.source.network_hint	Empty = physical adapters, * = all adapters.	Пусто = физические адаптеры, * = все адаптеры.	留空 = 物理适配器，* = 所有适配器。	Vacío = adaptadores físicos, * = todos los adaptadores.	Vide = cartes physiques, * = toutes les cartes.	Vazio = adaptadores físicos, * = todos os adaptadores.	Leer = physische Adapter, * = alle Adapter.
+set.system_accent	Windows accent color	Акцентный цвет Windows	Windows 强调色	Color de énfasis de Windows	Couleur d'accentuation de Windows	Cor de destaque do Windows	Windows-Akzentfarbe
+set.text_color	Text color	Цвет текста	文字颜色	Color del texto	Couleur du texte	Cor do texto	Textfarbe
+set.theme	Theme	Тема	主题	Tema	Thème	Tema	Design
+set.theme.custom	Custom colors	Свои цвета	自定义颜色	Colores personalizados	Couleurs personnalisées	Cores personalizadas	Eigene Farben
+set.theme.dark	Dark	Тёмная	深色	Oscuro	Sombre	Escuro	Dunkel
+set.theme.light	Light	Светлая	浅色	Claro	Clair	Claro	Hell
+set.theme.system	System (follows the taskbar)	Системная (как у панели задач)	系统（跟随任务栏）	Sistema (sigue la barra de tareas)	Système (comme la barre des tâches)	Sistema (segue a barra de tarefas)	System (wie die Taskleiste)
+set.thresholds	Thresholds	Пороги	阈值	Umbrales	Seuils	Limiares	Schwellenwerte
+set.tile_spacing	Tile spacing	Расстояние между плитками	磁贴间距	Espacio entre mosaicos	Espacement des tuiles	Espaçamento dos blocos	Kachelabstand
+set.tray	Tray icon	Значок в трее	托盘图标	Icono de la bandeja	Icône de notification	Ícone da bandeja	Infobereich-Symbol
+set.tray.app_icon	App icon	Значок приложения	应用图标	Icono de la aplicación	Icône de l'application	Ícone do aplicativo	App-Symbol
+set.tray.metric_icon	Live value:	Живое значение:	实时数值：	Valor en vivo:	Valeur en direct :	Valor ao vivo:	Live-Wert:
+set.tray.show	Show tray icon	Показывать значок в трее	显示托盘图标	Mostrar icono en la bandeja	Afficher l'icône de notification	Mostrar ícone na bandeja	Infobereich-Symbol anzeigen
+set.tray.tooltip	Summary tooltip	Подсказка со сводкой	摘要提示	Información resumida	Info-bulle récapitulative	Dica com resumo	Zusammenfassung als Tooltip
+set.use_thresholds	Color values above thresholds	Подсвечивать значения выше порогов	超过阈值时为数值着色	Colorear valores por encima de los umbrales	Colorer les valeurs au-dessus des seuils	Colorir valores acima dos limiares	Werte über den Schwellen einfärben
+set.vertical_margin	Vertical margin	Вертикальный отступ	垂直边距	Margen vertical	Marge verticale	Margem vertical	Vertikaler Rand
+set.warn	Warning from	Предупреждение от	警告阈值	Advertencia desde	Avertissement à partir de	Aviso a partir de	Warnung ab
+set.yes	Yes	Да	是	Sí	Oui	Sim	Ja
+set.zero_auto	0 = automatic	0 = авто	0 = 自动	0 = automático	0 = automatique	0 = automático	0 = automatisch
+status.no_sensor	No sensor data	Нет данных датчика	无传感器数据	Sin datos del sensor	Aucune donnée de capteur	Sem dados do sensor	Keine Sensordaten
+style.area	Area graph	График с заливкой	面积图	Gráfico de área	Graphique en aires	Gráfico de área	Flächendiagramm
+style.bar	Bar	Полоса	条形	Barra	Barre	Barra	Balken
+style.columns	Columns	Столбцы	柱状	Columnas	Colonnes	Colunas	Säulen
+style.fill	Fill	Заливка	填充	Relleno	Remplissage	Preenchimento	Füllung
+style.line	Line graph	Линейный график	折线图	Gráfico de líneas	Graphique linéaire	Gráfico de linhas	Liniendiagramm
+style.ring	Ring	Кольцо	圆环	Anillo	Anneau	Anel	Ring
+style.text	Text	Текст	文本	Texto	Texte	Texto	Text
+style.v_bar	Vertical bar	Вертикальная полоса	竖直条形	Barra vertical	Barre verticale	Barra vertical	Vertikaler Balken

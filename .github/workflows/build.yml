@@ -1,0 +1,141 @@
+name: Build
+
+on:
+  push:
+    branches: ["**"]
+    tags: ["v*"]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ !startsWith(github.ref, 'refs/tags/') }}
+
+permissions:
+  contents: read
+
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+
+jobs:
+  core:
+    name: Core tests (Linux)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all -- --check
+      - name: Clippy (core)
+        run: cargo clippy -p tm-core --all-targets -- -D warnings
+      - name: Tests
+        run: cargo test --workspace
+
+  windows:
+    name: Windows ${{ matrix.arch }}
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: x64
+            target: x86_64-pc-windows-msvc
+          - arch: arm64
+            target: aarch64-pc-windows-msvc
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Version
+        id: version
+        shell: pwsh
+        run: |
+          $base = (Select-String -Path Cargo.toml -Pattern '^version = "(.+)"').Matches[0].Groups[1].Value
+          if ($env:GITHUB_REF -like 'refs/tags/v*') {
+            $version = $env:GITHUB_REF_NAME.Substring(1)
+          } else {
+            $version = "$base-ci.$env:GITHUB_RUN_NUMBER"
+          }
+          # Stamp the version into the executable's version resource and About page.
+          (Get-Content Cargo.toml) -replace '^version = ".*"', "version = `"$version`"" | Set-Content Cargo.toml
+          "version=$version" >> $env:GITHUB_OUTPUT
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: ${{ matrix.target }}
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      - name: Clippy
+        if: matrix.arch == 'x64'
+        run: cargo clippy --workspace --target ${{ matrix.target }} -- -D warnings
+
+      - name: Tests
+        if: matrix.arch == 'x64'
+        run: cargo test --workspace --target ${{ matrix.target }}
+
+      - name: Build release
+        run: cargo build --release -p taskbar-monitor --target ${{ matrix.target }}
+
+      - name: Package portable zip
+        shell: pwsh
+        run: |
+          $v = "${{ steps.version.outputs.version }}"
+          $dir = "dist/TaskbarMonitor-$v-${{ matrix.arch }}-portable"
+          New-Item -ItemType Directory -Force -Path $dir | Out-Null
+          Copy-Item "target/${{ matrix.target }}/release/taskbar-monitor.exe" $dir
+          Copy-Item installer/portable.txt $dir
+          Copy-Item README.md $dir
+          Compress-Archive -Path "$dir/*" -DestinationPath "$dir.zip" -Force
+          Remove-Item -Recurse -Force $dir
+
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          $iscc = Get-ChildItem "${env:ProgramFiles(x86)}", "$env:ProgramFiles" -Filter ISCC.exe -Recurse -Depth 2 -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $iscc) {
+            choco install innosetup -y --no-progress
+            $iscc = Get-ChildItem "${env:ProgramFiles(x86)}", "$env:ProgramFiles" -Filter ISCC.exe -Recurse -Depth 2 -ErrorAction SilentlyContinue | Select-Object -First 1
+          }
+          if (-not $iscc) { throw "ISCC.exe not found" }
+          "ISCC=$($iscc.FullName)" >> $env:GITHUB_ENV
+
+      - name: Build installer
+        shell: pwsh
+        working-directory: installer
+        run: |
+          & $env:ISCC /Q "/DAppVersion=${{ steps.version.outputs.version }}" "/DArch=${{ matrix.arch }}" `
+            "/DSourceExe=..\target\${{ matrix.target }}\release\taskbar-monitor.exe" taskbar-monitor.iss
+          if ($LASTEXITCODE -ne 0) { throw "ISCC failed with $LASTEXITCODE" }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: taskbar-monitor-${{ matrix.arch }}
+          path: dist/*
+          if-no-files-found: error
+
+  release:
+    name: GitHub release
+    if: startsWith(github.ref, 'refs/tags/v')
+    needs: [core, windows]
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum * > SHA256SUMS.txt
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
+          generate_release_notes: true
+          prerelease: ${{ contains(github.ref_name, '-') }}
