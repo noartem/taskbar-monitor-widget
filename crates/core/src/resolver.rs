@@ -249,10 +249,18 @@ fn claude_reading(label: String, usage: &ClaudeUsage, limit: Option<&ClaudeLimit
     r
 }
 
+/// `source` / `default_adapter`: GPU name substring or LUID; `*` = the busiest GPU right now
+/// (useful on laptops where the integrated and discrete GPUs take turns). Empty = default adapter.
 pub fn select_gpu<'a>(snap: &'a Snapshot, source: &str, default_adapter: &str) -> Option<&'a GpuInfo> {
     for selector in [source.trim(), default_adapter.trim()] {
         if selector.is_empty() {
             continue;
+        }
+        if selector == "*" {
+            return snap
+                .gpus
+                .iter()
+                .max_by(|a, b| a.usage.unwrap_or(0.0).total_cmp(&b.usage.unwrap_or(0.0)).then(a.vram_used.cmp(&b.vram_used)));
         }
         let needle = selector.to_lowercase();
         if let Some(g) =
@@ -383,6 +391,16 @@ mod tests {
         assert_eq!(vram.value_text, "25%");
         let intel = resolve(&MetricConfig::new(MetricKind::GpuUsage).with_source("intel"), &sn, &s);
         assert_eq!(intel.value, 1.0);
+    }
+
+    #[test]
+    fn busiest_gpu_selector() {
+        let s = Settings::default();
+        let mut sn = snap();
+        assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage).with_source("*"), &sn, &s).value, 50.0);
+        sn.gpus[0].usage = Some(80.0);
+        assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage).with_source("*"), &sn, &s).value, 80.0);
+        assert_eq!(resolve(&MetricConfig::new(MetricKind::GpuUsage), &sn, &s).value, 50.0, "default stays on the default GPU");
     }
 
     #[test]

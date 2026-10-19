@@ -831,9 +831,14 @@ impl SettingsApp {
             ui.end_row();
 
             ui.label(tr("set.hw.gpu"));
-            let label = if h.gpu_adapter.is_empty() { tr("set.auto").to_string() } else { h.gpu_adapter.clone() };
+            let label = match h.gpu_adapter.as_str() {
+                "" => tr("set.auto").to_string(),
+                "*" => tr("set.source.busiest_gpu").to_string(),
+                other => other.to_string(),
+            };
             ComboBox::from_id_salt("gpu_default").width(320.0).selected_text(label).show_ui(ui, |ui| {
                 ui.selectable_value(&mut h.gpu_adapter, String::new(), tr("set.auto"));
+                ui.selectable_value(&mut h.gpu_adapter, "*".to_string(), tr("set.source.busiest_gpu"));
                 for g in sources.iter().flat_map(|s| s.gpus.iter()) {
                     ui.selectable_value(&mut h.gpu_adapter, g.clone(), g);
                 }
@@ -930,7 +935,9 @@ impl SettingsApp {
 
 fn source_picker(ui: &mut egui::Ui, m: &mut MetricConfig, source_type: SourceType, sources: Option<&Sources>) {
     let options: Vec<(String, String)> = match (source_type, sources) {
-        (SourceType::Gpu, Some(s)) => s.gpus.iter().map(|g| (g.clone(), g.clone())).collect(),
+        (SourceType::Gpu, Some(s)) => std::iter::once(("*".to_string(), tr("set.source.busiest_gpu").to_string()))
+            .chain(s.gpus.iter().map(|g| (g.clone(), g.clone())))
+            .collect(),
         (SourceType::Network, Some(s)) => std::iter::once(("*".to_string(), tr("set.source.all_adapters").to_string()))
             .chain(s.networks.iter().map(|(n, d)| (n.clone(), format!("{n} — {d}"))))
             .collect(),
@@ -958,6 +965,7 @@ fn source_picker(ui: &mut egui::Ui, m: &mut MetricConfig, source_type: SourceTyp
         SourceType::Network => tr("set.source.network_hint"),
         SourceType::ClaudeLimit => tr("set.source.claude_hint"),
         SourceType::Disk => tr("set.source.disk_hint"),
+        SourceType::Gpu => tr("set.source.gpu_hint"),
         _ => "",
     };
     if !hint.is_empty() {

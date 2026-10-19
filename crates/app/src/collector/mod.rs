@@ -143,6 +143,8 @@ struct Cache {
     sensors: Vec<SensorInfo>,
     cpu_temp: Option<f64>,
     gpu_sensors: HashMap<String, gpu::GpuSensor>,
+    /// Last logged adapter/counter mapping, to log only changes.
+    gpu_log: String,
 }
 
 fn stale(at: Option<Instant>, every: Duration) -> bool {
@@ -171,6 +173,7 @@ fn sampler(shared: Arc<Shared>) {
         sensors: Vec::new(),
         cpu_temp: None,
         gpu_sensors: HashMap::new(),
+        gpu_log: String::new(),
     };
 
     loop {
@@ -244,25 +247,12 @@ fn sampler(shared: Arc<Shared>) {
         if want_gpu || want_sensors {
             let usage = pdh.as_ref().and_then(|p| p.gpu_usage());
             let dedicated = pdh.as_ref().and_then(|p| p.gpu_dedicated());
-            let default_luid = cache.adapters.iter().max_by_key(|a| a.dedicated).map(|a| a.luid_str.clone());
-            snap.gpus = cache
-                .adapters
-                .iter()
-                .map(|a| {
-                    let sensor = cache.gpu_sensors.get(&a.luid_str);
-                    GpuInfo {
-                        name: a.name.clone(),
-                        luid: a.luid_str.clone(),
-                        usage: usage.as_ref().filter(|_| want_gpu).map(|u| u.get(&a.luid_str).copied().unwrap_or(0.0)),
-                        vram_used: dedicated.as_ref().and_then(|d| d.get(&a.luid_str).copied()).unwrap_or(0),
-                        // Without the usage counter the percentage would be meaningless.
-                        vram_total: if dedicated.is_some() { a.dedicated } else { 0 },
-                        temperature: sensor.and_then(|s| s.temperature),
-                        fan_rpm: sensor.and_then(|s| s.fan_rpm),
-                        is_default: default_luid.as_deref() == Some(a.luid_str.as_str()),
-                    }
-                })
-                .collect();
+            snap.gpus = merge_gpus(&cache.adapters, usage.as_ref().filter(|_| want_gpu), dedicated.as_ref(), &cache.gpu_sensors);
+            let summary = gpu_summary(&cache.adapters, usage.as_ref(), dedicated.as_ref());
+            if summary != cache.gpu_log {
+                crate::log!("{summary}");
+                cache.gpu_log = summary;
+            }
         }
         if want_sensors {
             snap.cpu_temperature = cache.cpu_temp;
@@ -303,4 +293,74 @@ fn sampler(shared: Arc<Shared>) {
             st = shared.wake.wait_timeout(st, deadline - now).unwrap().0;
         }
     }
+}
+
+/// Combines DXGI adapters with the LUIDs seen in the GPU performance counters.
+///
+/// Counter instances whose LUID DXGI did not report still become GPUs (named by LUID), so their load is never
+/// silently dropped. The default GPU is the one with the most dedicated memory among adapters that actually have
+/// counter data; on hybrid laptops that is the discrete GPU, which idles at 0% while the integrated one drives
+/// the display.
+fn merge_gpus(
+    adapters: &[gpu::Adapter],
+    usage: Option<&HashMap<String, f64>>,
+    dedicated: Option<&HashMap<String, u64>>,
+    sensors: &HashMap<String, gpu::GpuSensor>,
+) -> Vec<GpuInfo> {
+    let mut entries: Vec<(String, String, u64)> =
+        adapters.iter().map(|a| (a.name.clone(), a.luid_str.clone(), a.dedicated)).collect();
+    let counter_luids = usage.into_iter().flat_map(|u| u.keys()).chain(dedicated.into_iter().flat_map(|d| d.keys()));
+    for luid in counter_luids {
+        if !entries.iter().any(|(_, l, _)| l.eq_ignore_ascii_case(luid)) {
+            entries.push((format!("GPU {luid}"), luid.clone(), 0));
+        }
+    }
+    let has_data = |luid: &str| {
+        usage.is_some_and(|u| u.contains_key(luid)) || dedicated.is_some_and(|d| d.get(luid).is_some_and(|v| *v > 0))
+    };
+    let default_luid = entries
+        .iter()
+        .filter(|(_, l, _)| has_data(l))
+        .max_by_key(|(_, _, total)| *total)
+        .or_else(|| entries.iter().max_by_key(|(_, _, total)| *total))
+        .map(|(_, l, _)| l.clone());
+
+    entries
+        .into_iter()
+        .map(|(name, luid, total)| {
+            let sensor = sensors.get(&luid);
+            GpuInfo {
+                usage: usage.map(|u| u.get(&luid).copied().unwrap_or(0.0)),
+                vram_used: dedicated.and_then(|d| d.get(&luid).copied()).unwrap_or(0),
+                // Without the usage counter the percentage would be meaningless.
+                vram_total: if dedicated.is_some() { total } else { 0 },
+                temperature: sensor.and_then(|s| s.temperature),
+                fan_rpm: sensor.and_then(|s| s.fan_rpm),
+                is_default: default_luid.as_deref() == Some(luid.as_str()),
+                name,
+                luid,
+            }
+        })
+        .collect()
+}
+
+/// One log line describing how adapters map to counters (for diagnosing "GPU 0%" reports).
+fn gpu_summary(
+    adapters: &[gpu::Adapter],
+    usage: Option<&HashMap<String, f64>>,
+    dedicated: Option<&HashMap<String, u64>>,
+) -> String {
+    let keys = |m: Option<Vec<&String>>| match m {
+        Some(mut v) => {
+            v.sort();
+            format!("{v:?}")
+        }
+        None => "unavailable".into(),
+    };
+    let list: Vec<String> = adapters.iter().map(|a| format!("{} [{}] {} MB", a.name, a.luid_str, a.dedicated >> 20)).collect();
+    format!(
+        "gpu: dxgi={list:?} engine_luids={} memory_luids={}",
+        keys(usage.map(|u| u.keys().collect())),
+        keys(dedicated.map(|d| d.keys().collect()))
+    )
 }

@@ -100,29 +100,41 @@ impl Pdh {
     fn array(counter: PDH_HCOUNTER, large: bool) -> Vec<(String, f64)> {
         let format = if large { PDH_FMT_LARGE } else { PDH_FMT(PDH_FMT_DOUBLE.0 | PDH_FMT_NOCAP100) };
         let item = size_of::<PDH_FMT_COUNTERVALUE_ITEM_W>();
-        let mut size = 0u32;
-        let mut count = 0u32;
-        unsafe {
-            if PdhGetFormattedCounterArrayW(counter, format, &mut size, &mut count, None) != PDH_MORE_DATA {
-                return Vec::new();
+        // Instances (e.g. per-process GPU engines) can appear between the sizing call and the read; retry then.
+        for _ in 0..3 {
+            let mut size = 0u32;
+            let mut count = 0u32;
+            unsafe {
+                let status = PdhGetFormattedCounterArrayW(counter, format, &mut size, &mut count, None);
+                if status != PDH_MORE_DATA {
+                    log_status("PdhGetFormattedCounterArray (size)", status);
+                    return Vec::new();
+                }
+                // Instance names are stored after the items in the same buffer; allocate items for alignment.
+                let n = (size as usize).div_ceil(item) + 1;
+                let mut buf = vec![PDH_FMT_COUNTERVALUE_ITEM_W::default(); n];
+                size = (n * item) as u32;
+                let status = PdhGetFormattedCounterArrayW(counter, format, &mut size, &mut count, Some(buf.as_mut_ptr()));
+                if status == PDH_MORE_DATA {
+                    continue;
+                }
+                if status != 0 {
+                    log_status("PdhGetFormattedCounterArray", status);
+                    return Vec::new();
+                }
+                return buf[..(count as usize).min(n)]
+                    .iter()
+                    .filter(|it| Self::valid(&it.FmtValue))
+                    .map(|it| {
+                        let name = it.szName.to_string().unwrap_or_default();
+                        let value =
+                            if large { it.FmtValue.Anonymous.largeValue as f64 } else { it.FmtValue.Anonymous.doubleValue };
+                        (name, value)
+                    })
+                    .collect();
             }
-            // Instance names are stored after the items in the same buffer; allocate items for alignment.
-            let n = (size as usize).div_ceil(item) + 1;
-            let mut buf = vec![PDH_FMT_COUNTERVALUE_ITEM_W::default(); n];
-            size = (n * item) as u32;
-            if PdhGetFormattedCounterArrayW(counter, format, &mut size, &mut count, Some(buf.as_mut_ptr())) != 0 {
-                return Vec::new();
-            }
-            buf[..(count as usize).min(n)]
-                .iter()
-                .filter(|it| Self::valid(&it.FmtValue))
-                .map(|it| {
-                    let name = it.szName.to_string().unwrap_or_default();
-                    let value = if large { it.FmtValue.Anonymous.largeValue as f64 } else { it.FmtValue.Anonymous.doubleValue };
-                    (name, value)
-                })
-                .collect()
         }
+        Vec::new()
     }
 
     pub fn cpu(&self) -> Option<f64> {
@@ -200,4 +212,15 @@ pub fn instance_luid(name: &str) -> Option<String> {
     let rest = &name[start..];
     let end = rest.find("_phys").unwrap_or(rest.len());
     Some(rest[..end].to_ascii_uppercase().replace("0X", "0x"))
+}
+
+/// Logs an unexpected PDH status at most once a minute (they repeat every tick).
+fn log_status(what: &str, status: u32) {
+    use std::sync::atomic::{AtomicI64, Ordering};
+    static LAST: AtomicI64 = AtomicI64::new(0);
+    let now = tm_core::time::now_unix();
+    if now - LAST.load(Ordering::Relaxed) >= 60 {
+        LAST.store(now, Ordering::Relaxed);
+        crate::log!("{what} failed: 0x{status:08X}");
+    }
 }

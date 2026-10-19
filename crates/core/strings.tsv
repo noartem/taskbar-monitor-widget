@@ -200,3 +200,5 @@ set.vertical_margin	Vertical margin	Вертикальный отступ
 set.warn	Warning from	Предупреждение от
 set.yes	Yes	Да
 set.zero_auto	0 = automatic	0 = авто
+set.source.busiest_gpu	Busiest GPU right now	Самая загруженная GPU
+set.source.gpu_hint	Empty = GPU with the most video memory (on laptops usually the discrete one, 0% while idle); * = busiest GPU.	Пусто = GPU с наибольшей видеопамятью (на ноутбуке обычно дискретная, в простое 0%); * = самая загруженная GPU.

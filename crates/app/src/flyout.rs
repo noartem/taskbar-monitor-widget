@@ -296,7 +296,7 @@ fn draw_card(
     let value_color = if !reading.available {
         p.label
     } else if reading.uses_thresholds {
-        p.threshold(p.foreground, reading.value, a)
+        p.readable(p.threshold(p.foreground, reading.value, a))
     } else {
         p.foreground
     };

@@ -65,6 +65,23 @@ impl Rgba {
     pub fn luminance(self) -> f32 {
         0.2126 * self.r + 0.7152 * self.g + 0.0722 * self.b
     }
+
+    /// WCAG relative luminance (linear sRGB).
+    pub fn relative_luminance(self) -> f32 {
+        let lin = |c: f32| if c <= 0.04045 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) };
+        0.2126 * lin(self.r) + 0.7152 * lin(self.g) + 0.0722 * lin(self.b)
+    }
+
+    /// WCAG contrast ratio between two opaque colors (1..21).
+    pub fn contrast(self, other: Rgba) -> f32 {
+        let (a, b) = (self.relative_luminance(), other.relative_luminance());
+        (a.max(b) + 0.05) / (a.min(b) + 0.05)
+    }
+
+    /// `self` drawn with its alpha over an opaque `base`.
+    pub fn over(self, base: Rgba) -> Rgba {
+        base.mix(self.with_alpha(1.0), self.a).with_alpha(1.0)
+    }
 }
 
 /// Resolved colors for drawing.
@@ -82,6 +99,8 @@ pub struct Palette {
     /// Flyout card background and border.
     pub surface: Rgba,
     pub surface_border: Rgba,
+    /// Approximate color behind the widget (taskbar plus widget background), for contrast decisions.
+    pub base: Rgba,
     pub color_by_category: bool,
 }
 
@@ -127,6 +146,11 @@ impl Palette {
             crit: Rgba::parse(&a.crit_color).unwrap_or(Rgba::from_u8(0xF1, 0x70, 0x7A)),
             surface: if dark { Rgba::from_u8(0x2B, 0x2B, 0x2B) } else { Rgba::from_u8(0xFB, 0xFB, 0xFB) },
             surface_border: foreground.with_alpha(0.08),
+            base: bg_base.with_alpha(a.background_opacity).over(if dark {
+                Rgba::from_u8(0x1C, 0x1C, 0x1C)
+            } else {
+                Rgba::from_u8(0xEE, 0xEE, 0xEE)
+            }),
             color_by_category: a.color_by_category,
         }
     }
@@ -146,6 +170,40 @@ impl Palette {
         };
         let (r, g, b) = if self.dark { dark } else { light };
         Rgba::from_u8(r, g, b)
+    }
+
+    /// Readable text color (the theme foreground or its opposite) on top of an opaque `background`.
+    pub fn text_on(&self, background: Rgba) -> Rgba {
+        let dark_text = Rgba::from_u8(0x14, 0x14, 0x14);
+        let candidates = [self.foreground, if self.dark { dark_text } else { Rgba::WHITE }];
+        let best = if candidates[0].contrast(background) >= candidates[1].contrast(background) { 0 } else { 1 };
+        candidates[best]
+    }
+
+    /// Fill for text-over-fill styles: the most opaque fill alpha (0.6 down to 0.25) at which text still reaches
+    /// WCAG AA contrast (4.5:1). Returns (alpha, text color).
+    pub fn fill_with_text(&self, fill: Rgba) -> (f32, Rgba) {
+        let mut alpha = 0.6;
+        loop {
+            let bg = fill.with_alpha(alpha).over(self.base);
+            let text = self.text_on(bg);
+            if text.contrast(bg) >= 4.5 || alpha <= 0.25 {
+                return (alpha, text);
+            }
+            alpha -= 0.05;
+        }
+    }
+
+    /// `color` adjusted towards the foreground until it reaches 4.5:1 against the widget background
+    /// (e.g. warning yellow on a light taskbar).
+    pub fn readable(&self, color: Rgba) -> Rgba {
+        let mut c = color.with_alpha(1.0);
+        let mut t = 0.0;
+        while c.contrast(self.base) < 4.5 && t < 1.0 {
+            t += 0.1;
+            c = color.with_alpha(1.0).mix(self.foreground.with_alpha(1.0), t);
+        }
+        c
     }
 
     /// Value color after applying warning/critical thresholds.
@@ -172,6 +230,28 @@ mod tests {
         assert_eq!(Rgba::parse("000000"), Some(Rgba::BLACK));
         assert_eq!(Rgba::parse("#FF000080").unwrap().to_hex(), "#FF000080");
         assert!(Rgba::parse("#12345").is_none());
+    }
+
+    #[test]
+    fn text_on_fills_stays_readable() {
+        // Warning yellow / critical red fills on a dark taskbar: whichever text is chosen must reach 4.5:1.
+        for dark in [true, false] {
+            let p = Palette::build(&Appearance::default(), dark, None);
+            let mut fills = vec![p.warn, p.crit, p.accent, Rgba::from_u8(0x20, 0x20, 0x20)];
+            fills.extend([MetricCategory::Cpu, MetricCategory::Memory, MetricCategory::Claude].map(|c| p.category(c)));
+            for fill in fills {
+                let (alpha, text) = p.fill_with_text(fill);
+                let bg = fill.with_alpha(alpha).over(p.base);
+                assert!(text.contrast(bg) >= 4.5, "{} on {} (alpha {alpha})", text.to_hex(), bg.to_hex());
+            }
+        }
+    }
+
+    #[test]
+    fn threshold_text_is_readable_on_light_taskbar() {
+        let p = Palette::build(&Appearance::default(), false, None);
+        assert!(p.warn.contrast(p.base) < 4.5, "precondition: raw yellow is unreadable on light");
+        assert!(p.readable(p.warn).contrast(p.base) >= 4.5);
     }
 
     #[test]

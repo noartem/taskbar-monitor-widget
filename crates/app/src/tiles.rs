@@ -10,7 +10,7 @@ use tm_core::metrics::{MetricStyle, MetricUnit};
 use tm_core::resolver::Reading;
 use windows::Win32::Graphics::DirectWrite::IDWriteTextFormat;
 
-use crate::render::{Canvas, Gfx};
+use crate::render::{Canvas, Gfx, TextBlock};
 
 pub struct TileInput<'a> {
     pub config: &'a MetricConfig,
@@ -237,7 +237,7 @@ pub fn draw(canvas: &Canvas, layout: &WidgetLayout, inputs: &[TileInput], settin
         let value_color = if !r.available {
             palette.label
         } else if r.uses_thresholds {
-            palette.threshold(palette.foreground, r.value, a)
+            palette.readable(palette.threshold(palette.foreground, r.value, a))
         } else {
             palette.foreground
         };
@@ -246,16 +246,21 @@ pub fn draw(canvas: &Canvas, layout: &WidgetLayout, inputs: &[TileInput], settin
             if r.available && r.uses_thresholds { palette.threshold(base, r.value, a) } else { base }
         };
         let frac = fraction(input) as f32;
+        // Text over a fill switches to a contrasting color where the fill is (like a progress bar's label).
+        let mut text_fill: Option<(Rect, Rgba)> = None;
 
         // Background part.
         match c.style {
             MetricStyle::Fill => {
                 let radius = 3.0 * s;
                 canvas.fill_round(rect.x, rect.y + s, rect.w, rect.h - 2.0 * s, radius, palette.track.mul_alpha(0.8));
-                if r.available {
-                    canvas.clip(rect.x, rect.y, rect.w * frac, rect.h);
-                    canvas.fill_round(rect.x, rect.y + s, rect.w, rect.h - 2.0 * s, radius, part_color.with_alpha(0.5));
+                if r.available && frac > 0.0 {
+                    let (alpha, text) = palette.fill_with_text(part_color);
+                    let filled = Rect { x: rect.x, y: rect.y, w: rect.w * frac, h: rect.h };
+                    canvas.clip(filled.x, filled.y, filled.w, filled.h);
+                    canvas.fill_round(rect.x, rect.y + s, rect.w, rect.h - 2.0 * s, radius, part_color.with_alpha(alpha));
                     canvas.unclip();
+                    text_fill = Some((filled, text));
                 }
             }
             MetricStyle::Bar if t.part_w > 0.0 => {
@@ -265,11 +270,15 @@ pub fn draw(canvas: &Canvas, layout: &WidgetLayout, inputs: &[TileInput], settin
                 let by_ov = if t.overlay { rect.y + s } else { by };
                 canvas.fill_round(t.part_x, by_ov, t.part_w, bh_ov, bh / 2.0, palette.track);
                 if r.available {
-                    let fill_alpha = if t.overlay { 0.55 } else { 1.0 };
+                    let (fill_alpha, text) =
+                        if t.overlay { palette.fill_with_text(part_color) } else { (1.0, palette.foreground) };
                     // Keep a visible rounded cap for small non-zero values.
                     let fw = t.part_w * frac;
                     let fw = if fw > 0.0 { fw.max(bh.min(t.part_w)) } else { 0.0 };
                     canvas.fill_round(t.part_x, by_ov, fw, bh_ov, bh / 2.0, part_color.mul_alpha(fill_alpha));
+                    if t.overlay && fw > 0.0 {
+                        text_fill = Some((Rect { x: t.part_x, y: rect.y, w: fw, h: rect.h }, text));
+                    }
                 }
             }
             MetricStyle::VBar if t.part_w > 0.0 => {
@@ -314,20 +323,37 @@ pub fn draw(canvas: &Canvas, layout: &WidgetLayout, inputs: &[TileInput], settin
         }
 
         // Text.
+        let draw_text = |b: &TextBlock, x: f32, normal: Rgba, on_fill_alpha: f32| {
+            let y = rect.y + (rect.h - b.height) / 2.0;
+            match text_fill {
+                Some((fill, on_fill)) if x < fill.x + fill.w => {
+                    let split = fill.x + fill.w;
+                    canvas.clip(rect.x, rect.y, split - rect.x, rect.h);
+                    canvas.text(b, x, y, on_fill.mul_alpha(on_fill_alpha));
+                    canvas.unclip();
+                    if x + b.width > split {
+                        canvas.clip(split, rect.y, rect.x + rect.w - split, rect.h);
+                        canvas.text(b, x, y, normal);
+                        canvas.unclip();
+                    }
+                }
+                _ => canvas.text(b, x, y, normal),
+            }
+        };
         if c.show_label
             && !r.label.is_empty()
             && let Some(f) = &layout.label_fmt
             && let Ok(b) = canvas.gfx.layout(&r.label, f)
         {
             let lx = if t.overlay { rect.x + gap } else { rect.x + t.inset };
-            canvas.text(&b, lx, rect.y + (rect.h - b.height) / 2.0, palette.label);
+            draw_text(&b, lx, palette.label, 0.85);
         }
         if c.show_value
             && let Some(f) = &layout.value_fmt
             && let Ok(b) = canvas.gfx.layout(&r.value_text, f)
         {
             let right = rect.x + rect.w - if t.overlay { gap } else { t.inset };
-            canvas.text(&b, right - b.width, rect.y + (rect.h - b.height) / 2.0, value_color);
+            draw_text(&b, right - b.width, value_color, 1.0);
         }
     }
 }
