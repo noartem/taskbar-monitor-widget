@@ -368,8 +368,13 @@ impl App {
                 }
             }
             None => {
-                // Claude-only update.
-                self.snapshot.claude = self.collector.shared.state.lock().unwrap().claude.clone();
+                // Subscription-only update.
+                {
+                    let st = self.collector.shared.state.lock().unwrap();
+                    self.snapshot.claude = st.claude.clone();
+                    self.snapshot.codex = st.codex.clone();
+                    self.snapshot.ollama = st.ollama.clone();
+                }
                 self.recompute_readings();
             }
         }
@@ -705,7 +710,7 @@ impl App {
                 }
             }
             tray::CMD_RESTART_ADMIN => self.restart_elevated(),
-            tray::CMD_REFRESH_CLAUDE => self.collector.refresh_claude(),
+            tray::CMD_REFRESH_USAGE => self.collector.refresh_subscriptions(),
             tray::CMD_OPEN_CONFIG => util::shell_open(&self.paths.config_file().display().to_string()),
             tray::CMD_OPEN_FOLDER => util::shell_open(&self.paths.data_dir.display().to_string()),
             tray::CMD_EXIT => self.exit(),
@@ -931,11 +936,19 @@ pub fn requirements(settings: &Settings) -> Requirements {
     if !settings.claude.enabled {
         sources = DataSources(sources.0 & !DataSources::CLAUDE.0);
     }
+    if !settings.codex.enabled {
+        sources = DataSources(sources.0 & !DataSources::CODEX.0);
+    }
+    if !settings.ollama.enabled {
+        sources = DataSources(sources.0 & !DataSources::OLLAMA.0);
+    }
     Requirements {
         sources,
         interval_ms: settings.general.refresh_interval_ms,
         hardware: settings.hardware.clone(),
         claude: settings.claude.clone(),
+        codex: settings.codex.clone(),
+        ollama: settings.ollama.clone(),
     }
 }
 

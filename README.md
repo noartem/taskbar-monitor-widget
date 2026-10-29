@@ -1,8 +1,8 @@
 # Taskbar Monitor
 
 Лёгкий виджет для панели задач Windows 10/11: загрузка **CPU / GPU / RAM / VRAM / сети / дисков**, температуры
-и лимиты подписки **Claude Code** (сессия 5 ч, неделя 7 д и недельный лимит модели — Fable / Opus, если он есть
-в вашем тарифе). Написан на Rust поверх чистого Win32, без рантаймов и фреймворков: один `exe` ≈ 6 МБ.
+и usage подписок **Claude Code**, **Codex** и **Ollama Cloud**: проценты использованного лимита и время до сброса.
+Написан на Rust поверх чистого Win32, без рантаймов и фреймворков: один `exe` ≈ 6 МБ.
 
 - **Всё настраивается**: какие метрики, в каком порядке, как выглядят (текст, полоса, вертикальная полоса,
   заливка, линейный график, график с заливкой, столбцы, кольцо), подписи, цвета, пороги, шрифт, отступы,
@@ -60,6 +60,8 @@
 | Сеть | счётчики интерфейсов IP Helper (`GetIfTable2`); по умолчанию только физические адаптеры | нет |
 | Диск | счётчики `PhysicalDisk` (чтение, запись, активность), место — `GetDiskFreeSpaceEx` | нет |
 | Claude Code | `GET https://api.anthropic.com/api/oauth/usage` с OAuth-токеном Claude Code | нет |
+| Codex (подписка ChatGPT) | `GET https://chatgpt.com/backend-api/wham/usage` с OAuth-токеном Codex CLI | нет |
+| Ollama Cloud | `GET https://ollama.com/api/balance` с API-ключом | нет |
 
 Собираются только данные, которые где-то показываются (виджет, окно подробностей или значок в трее).
 Отрисовка — Direct2D/DirectWrite в программный буфер (без создания GPU-устройства) раз в интервал обновления.
@@ -82,6 +84,46 @@
 и не пишется в журнал. Если он истёк — достаточно один раз запустить `claude`. Кнопка «Проверить сейчас»
 в настройках показывает все найденные лимиты.
 
+### Codex
+
+В настройках откройте **Codex**, включите мониторинг и добавьте метрики `codex_session` / `codex_weekly`
+в разделе **Метрики**. Существующая раскладка автоматически не меняется.
+
+После `codex login` виджет читает `%CODEX_HOME%\auth.json`, либо `%USERPROFILE%\.codex\auth.json`.
+Можно указать другой файл или папку, в том числе путь к Codex в WSL. Нужен вход через подписку ChatGPT:
+`OPENAI_API_KEY` не подходит. Учётные данные читаются без изменения; виджет не обновляет OAuth-токены.
+Если API отказал в доступе, обновите вход в Codex CLI и нажмите **Проверить сейчас**.
+
+Отображаются использованные проценты сессии **5 ч** и недели **7 д**, тариф и время до сброса.
+Недельный лимит распознаётся по длительности окна, даже если API вернул его первым и без сессионного.
+Если лимита нет в тарифе, показывается «Лимит недоступен для этого тарифа»; плитку можно скрыть через
+`hide_when_unavailable`. [Формат окон Codex](https://github.com/openai/codex/blob/main/codex-rs/codex-backend-openapi-models/src/models/rate_limit_window_snapshot.rs).
+
+### Ollama Cloud
+
+В настройках откройте **Ollama Cloud**, включите мониторинг и введите API-ключ с
+[ollama.com/settings/keys](https://ollama.com/settings/keys). Если поле пустое, используется переменная
+окружения `OLLAMA_API_KEY` процесса; введённый ключ имеет приоритет.
+**Введённый ключ сохраняется открытым текстом в `config.toml`**; в интерфейсе он замаскирован.
+Чтобы не хранить ключ в конфигурации, задайте переменную окружения до запуска виджета.
+
+Добавьте нужные метрики в разделе **Метрики**:
+
+- `ollama_monthly` — доля израсходованных месячных кредитов текущего тарифа; в подробностях — расход
+  в USD из месячного allowance, остаток купленных кредитов и время до сброса;
+- `ollama_session` / `ollama_weekly` — сессия и неделя старых тарифов. API возвращает остаток,
+  виджет показывает **использовано** (`100 − remaining_percent`), как у Claude и Codex.
+
+Тарифы без соответствующего лимита и нулевой месячный allowance не превращаются в фиктивные 0%.
+Контракт API: [Ollama Cloud Balance](https://docs.ollama.com/api/balance).
+
+Оба новых источника по умолчанию выключены, опрашиваются независимо раз в 120 секунд (настраивается;
+минимум 60 секунд) и только когда их метрики где-либо отображаются. **Проверить сейчас** работает
+и до включения мониторинга. После ошибки опроса последние успешные значения помечаются устаревшими;
+при смене настроек источника они очищаются. Токены/ключи не пишутся в журнал, отправляются только
+на фиксированные HTTPS-адреса соответствующего провайдера; HTTP-перенаправления отключены.
+
+
 ## Управление
 
 - **Клик** — окно подробностей, **двойной клик** — Диспетчер задач, **средняя кнопка** — настройки
@@ -89,7 +131,7 @@
 - Наведите на плитку — подсказка с деталями.
 - Снимите «Закрепить положение» и перетащите виджет вдоль панели задач.
 - Меню трея: подробности, настройки, пресеты и число строк, автозапуск, перезапуск от администратора,
-  обновить данные Claude, открыть `config.toml`/папку, выход.
+  обновить использование подписок, открыть `config.toml`/папку, выход.
 
 ## Конфигурация
 
@@ -136,6 +178,18 @@ enabled = true
 credentials_path = ""        # пусто = %USERPROFILE%\.claude\.credentials.json
 poll_interval_secs = 120
 
+[codex]
+enabled = false              # включите и добавьте метрики Codex
+credentials_path = ""        # пусто = CODEX_HOME/auth.json или ~/.codex/auth.json
+poll_interval_secs = 120
+show_reset_countdown = true
+
+[ollama]
+enabled = false              # включите и добавьте метрики Ollama
+api_key = ""                 # пусто = OLLAMA_API_KEY; иначе хранится открытым текстом
+poll_interval_secs = 120
+show_reset_countdown = true
+
 [hardware]
 gpu_sensors = true           # температура/вентилятор GPU из драйвера
 thermal_zones = true         # термозоны ACPI
@@ -154,11 +208,23 @@ source = "fable"             # пусто/auto = Fable → Opus → Sonnet
 style = "ring"
 overlay_text = true
 hide_when_unavailable = true
+
+[[metrics]]
+kind = "codex_session"
+style = "bar"
+
+[[metrics]]
+kind = "codex_weekly"
+style = "bar"
+
+[[metrics]]
+kind = "ollama_monthly"       # для старого тарифа: ollama_session / ollama_weekly
+style = "bar"
 ```
 
 Виды метрик (`kind`): `cpu_usage`, `cpu_temp`, `ram_usage`, `gpu_usage`, `gpu_temp`, `vram_usage`, `net_down`,
 `net_up`, `net_total`, `disk_read`, `disk_write`, `disk_active`, `disk_space`, `claude_session`, `claude_weekly`,
-`claude_model`, `claude_extra`, `sensor`.
+`claude_model`, `claude_extra`, `codex_session`, `codex_weekly`, `ollama_monthly`, `ollama_session`, `ollama_weekly`, `sensor`.
 
 Поле `source` у метрики: имя GPU; адаптер сети (`*` = все); диск (`0 C:`, пусто = все); буква тома (`D:`);
 идентификатор датчика LibreHardwareMonitor (`/amdcpu/0/temperature/2`); модель Claude (`fable`, `opus`).
@@ -174,7 +240,7 @@ cargo build --release -p taskbar-monitor
 # target\release\taskbar-monitor.exe
 ```
 
-Платформенно-независимое ядро (настройки, модель метрик, форматирование, разбор ответа Claude, локализация)
+Платформенно-независимое ядро (настройки, модель метрик, форматирование, разбор usage Claude/Codex/Ollama, локализация)
 собирается и тестируется где угодно: `cargo test -p tm-core`. Проверить Windows-часть с Linux можно
 кросс-компиляцией: `rustup target add x86_64-pc-windows-gnu` + `mingw-w64`, затем
 `cargo build --target x86_64-pc-windows-gnu -p taskbar-monitor`.
@@ -197,7 +263,7 @@ iscc /DAppVersion=0.1.0 /DArch=x64 /DSourceExe=..\target\release\taskbar-monitor
 ## Структура
 
 ```
-crates/core   tm-core: config.toml, пресеты, модель метрик, резолвер, форматирование, Claude usage, i18n (ru/en)
+crates/core   tm-core: config.toml, пресеты, модель метрик, резолвер, форматирование, subscription usage, i18n
 crates/app    taskbar-monitor.exe:
   app.rs          цикл сообщений, клики/перетаскивание, хуки панели задач, применение настроек
   widget.rs       окно виджета на панели задач (overlay / embedded), подсказки
@@ -206,7 +272,7 @@ crates/app    taskbar-monitor.exe:
   tray.rs         значок в трее, меню, живой значок
   render.rs       Direct2D/DirectWrite → layered window
   taskbar.rs      поиск панелей задач, трея, полноэкранных приложений
-  collector/      сбор данных: PDH, DXGI/D3DKMT, IP Helper, WMI (LibreHardwareMonitor), Claude
+  collector/      сбор данных: PDH, DXGI/D3DKMT, IP Helper, WMI (LibreHardwareMonitor), Claude/Codex/Ollama
   settings_ui.rs  окно настроек (egui, отдельный процесс)
   autostart.rs    ключ Run / задание Планировщика
   elevation.rs    проверка прав и перезапуск через UAC
@@ -219,4 +285,4 @@ installer/    Inno Setup + portable.txt
   свободной области (по умолчанию слева от трея). Если он перекрывает значки — сдвиньте его (`offset_x` или
   перетаскиванием) или выберите другое положение.
 - Температура CPU без LibreHardwareMonitor доступна не на всех машинах (зависит от ACPI-термозон).
-- API использования Claude не документирован публично; разбор устроен терпимо к изменениям, но формат может поменяться.
+- API использования Claude и Codex не документированы публично; формат может поменяться.

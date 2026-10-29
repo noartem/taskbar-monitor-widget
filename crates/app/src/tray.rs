@@ -35,7 +35,7 @@ pub const CMD_AUTOSTART_OFF: u32 = 300;
 pub const CMD_AUTOSTART_USER: u32 = 301;
 pub const CMD_AUTOSTART_ELEVATED: u32 = 302;
 pub const CMD_RESTART_ADMIN: u32 = 400;
-pub const CMD_REFRESH_CLAUDE: u32 = 401;
+pub const CMD_REFRESH_USAGE: u32 = 401;
 pub const CMD_OPEN_CONFIG: u32 = 402;
 pub const CMD_OPEN_FOLDER: u32 = 403;
 pub const CMD_EXIT: u32 = 500;
@@ -202,8 +202,8 @@ impl Tray {
             } else {
                 add(menu, CMD_RESTART_ADMIN, tr("menu.restart_admin"), false);
             }
-            if settings.claude.enabled {
-                add(menu, CMD_REFRESH_CLAUDE, tr("menu.refresh_claude"), false);
+            if settings.claude.enabled || settings.codex.enabled || settings.ollama.enabled {
+                add(menu, CMD_REFRESH_USAGE, tr("menu.refresh_usage"), false);
             }
             add(menu, CMD_OPEN_CONFIG, tr("menu.open_config"), false);
             add(menu, CMD_OPEN_FOLDER, tr("menu.open_folder"), false);

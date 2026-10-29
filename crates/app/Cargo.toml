@@ -1,6 +1,6 @@
 [package]
 name = "taskbar-monitor"
-description = "Windows taskbar widget: CPU/GPU/RAM/VRAM/network/disk and Claude Code usage"
+description = "Windows taskbar widget: CPU/GPU/RAM/VRAM/network/disk and Claude/Codex/Ollama subscription usage"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

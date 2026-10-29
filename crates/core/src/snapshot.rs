@@ -3,6 +3,7 @@
 use std::collections::BTreeMap;
 
 use crate::claude::ClaudeUsage;
+use crate::usage::SubscriptionUsage;
 
 #[derive(Debug, Clone, Default)]
 pub struct Snapshot {
@@ -18,6 +19,8 @@ pub struct Snapshot {
     /// Keyed by sensor identifier.
     pub sensors: BTreeMap<String, SensorInfo>,
     pub claude: ClaudeUsage,
+    pub codex: SubscriptionUsage,
+    pub ollama: SubscriptionUsage,
 }
 
 #[derive(Debug, Clone, Default, PartialEq)]

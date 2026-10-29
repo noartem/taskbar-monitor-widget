@@ -24,11 +24,16 @@ pub enum MetricKind {
     ClaudeWeekly,
     ClaudeModel,
     ClaudeExtra,
+    CodexSession,
+    CodexWeekly,
+    OllamaMonthly,
+    OllamaSession,
+    OllamaWeekly,
     Sensor,
 }
 
 impl MetricKind {
-    pub const ALL: [MetricKind; 18] = [
+    pub const ALL: [MetricKind; 23] = [
         MetricKind::CpuUsage,
         MetricKind::CpuTemp,
         MetricKind::RamUsage,
@@ -46,6 +51,11 @@ impl MetricKind {
         MetricKind::ClaudeWeekly,
         MetricKind::ClaudeModel,
         MetricKind::ClaudeExtra,
+        MetricKind::CodexSession,
+        MetricKind::CodexWeekly,
+        MetricKind::OllamaMonthly,
+        MetricKind::OllamaSession,
+        MetricKind::OllamaWeekly,
         MetricKind::Sensor,
     ];
 
@@ -69,6 +79,11 @@ impl MetricKind {
             MetricKind::ClaudeWeekly => "claude_weekly",
             MetricKind::ClaudeModel => "claude_model",
             MetricKind::ClaudeExtra => "claude_extra",
+            MetricKind::CodexSession => "codex_session",
+            MetricKind::CodexWeekly => "codex_weekly",
+            MetricKind::OllamaMonthly => "ollama_monthly",
+            MetricKind::OllamaSession => "ollama_session",
+            MetricKind::OllamaWeekly => "ollama_weekly",
             MetricKind::Sensor => "sensor",
         }
     }
@@ -96,6 +111,11 @@ impl MetricKind {
             MetricKind::ClaudeWeekly => (U::Percent, "7d", S::Bar, T::None, "100%", C::Claude),
             MetricKind::ClaudeModel => (U::Percent, "Model", S::Bar, T::ClaudeLimit, "100%", C::Claude),
             MetricKind::ClaudeExtra => (U::Percent, "$", S::Bar, T::None, "100%", C::Claude),
+            MetricKind::CodexSession => (U::Percent, "Codex 5h", S::Bar, T::None, "100%", C::Codex),
+            MetricKind::CodexWeekly => (U::Percent, "Codex 7d", S::Bar, T::None, "100%", C::Codex),
+            MetricKind::OllamaMonthly => (U::Percent, "Ollama $", S::Bar, T::None, "100%", C::Ollama),
+            MetricKind::OllamaSession => (U::Percent, "Ollama 5h", S::Bar, T::None, "100%", C::Ollama),
+            MetricKind::OllamaWeekly => (U::Percent, "Ollama 7d", S::Bar, T::None, "100%", C::Ollama),
             MetricKind::Sensor => (U::Generic, "Sensor", S::Text, T::Sensor, "9999.9", C::Sensors),
         };
         MetricDef { unit, default_label: label, default_style: style, source_type: source, width_template: template, category }
@@ -115,6 +135,8 @@ impl MetricKind {
             MetricKind::ClaudeSession | MetricKind::ClaudeWeekly | MetricKind::ClaudeModel | MetricKind::ClaudeExtra => {
                 DataSources::CLAUDE
             }
+            MetricKind::CodexSession | MetricKind::CodexWeekly => DataSources::CODEX,
+            MetricKind::OllamaMonthly | MetricKind::OllamaSession | MetricKind::OllamaWeekly => DataSources::OLLAMA,
             MetricKind::Sensor => DataSources::SENSORS,
         }
     }
@@ -201,6 +223,8 @@ pub enum MetricCategory {
     Network,
     Disk,
     Claude,
+    Codex,
+    Ollama,
     Sensors,
 }
 
@@ -229,7 +253,9 @@ impl DataSources {
     pub const DRIVES: Self = Self(32);
     pub const SENSORS: Self = Self(64);
     pub const CLAUDE: Self = Self(128);
-    pub const ALL: Self = Self(255);
+    pub const CODEX: Self = Self(256);
+    pub const OLLAMA: Self = Self(512);
+    pub const ALL: Self = Self(1023);
 
     pub fn contains(self, other: Self) -> bool {
         self.0 & other.0 == other.0 && other.0 != 0

@@ -1,10 +1,12 @@
-//! Background data collection. One thread samples system metrics at the refresh interval, another polls
-//! Claude usage; both hand results to the UI thread through [`Shared`] and a posted window message.
+//! Background system sampling and independently polled subscription usage.
 
 pub mod claude;
+pub mod codex;
 pub mod gpu;
 pub mod network;
+pub mod ollama;
 pub mod pdh;
+mod subscriptions;
 pub mod system;
 pub mod wmi;
 
@@ -14,9 +16,10 @@ use std::sync::{Arc, Condvar, Mutex};
 use std::time::{Duration, Instant};
 
 use tm_core::claude::ClaudeUsage;
-use tm_core::config::{Claude, Hardware};
+use tm_core::config::{Claude, Codex, Hardware, Ollama};
 use tm_core::metrics::DataSources;
 use tm_core::snapshot::{GpuInfo, SensorInfo, Snapshot};
+use tm_core::usage::SubscriptionUsage;
 use windows::Win32::System::Com::{COINIT_MULTITHREADED, CoInitializeEx};
 use windows::Win32::UI::WindowsAndMessaging::PostMessageW;
 
@@ -28,12 +31,18 @@ pub struct Requirements {
     pub interval_ms: u32,
     pub hardware: Hardware,
     pub claude: Claude,
+    pub codex: Codex,
+    pub ollama: Ollama,
 }
 
 pub struct SharedState {
     pub req: Requirements,
     pub snapshot: Option<Snapshot>,
     pub claude: ClaudeUsage,
+    pub codex: SubscriptionUsage,
+    pub ollama: SubscriptionUsage,
+    pub subscription_generations: [u64; 2],
+    pub subscription_refresh: [bool; 2],
     pub claude_refresh: bool,
     /// Bumped when requirements change (wakes the sampler).
     pub generation: u64,
@@ -46,6 +55,7 @@ pub struct Shared {
     pub state: Mutex<SharedState>,
     pub wake: Condvar,
     pub claude_wake: Condvar,
+    pub subscription_wake: Condvar,
     hwnd: AtomicIsize,
 }
 
@@ -77,6 +87,10 @@ impl Collector {
                 req,
                 snapshot: None,
                 claude: ClaudeUsage::default(),
+                codex: SubscriptionUsage::default(),
+                ollama: SubscriptionUsage::default(),
+                subscription_generations: [0; 2],
+                subscription_refresh: [false; 2],
                 claude_refresh: false,
                 generation: 0,
                 claude_generation: 0,
@@ -84,13 +98,18 @@ impl Collector {
             }),
             wake: Condvar::new(),
             claude_wake: Condvar::new(),
+            subscription_wake: Condvar::new(),
             hwnd: AtomicIsize::new(hwnd),
         });
         let s1 = shared.clone();
         let s2 = shared.clone();
+        let s3 = shared.clone();
+        let s4 = shared.clone();
         let threads = vec![
             std::thread::Builder::new().name("sampler".into()).spawn(move || sampler(s1)).expect("sampler thread"),
             std::thread::Builder::new().name("claude".into()).spawn(move || claude::run(s2)).expect("claude thread"),
+            std::thread::Builder::new().name("codex".into()).spawn(move || subscriptions::run(s3, 0)).expect("codex thread"),
+            std::thread::Builder::new().name("ollama".into()).spawn(move || subscriptions::run(s4, 1)).expect("ollama thread"),
         ];
         Self { shared, threads }
     }
@@ -102,6 +121,18 @@ impl Collector {
         }
         let claude_changed = st.req.claude != req.claude
             || st.req.sources.contains(DataSources::CLAUDE) != req.sources.contains(DataSources::CLAUDE);
+        let codex_changed =
+            st.req.codex != req.codex || st.req.sources.contains(DataSources::CODEX) != req.sources.contains(DataSources::CODEX);
+        let ollama_changed = st.req.ollama != req.ollama
+            || st.req.sources.contains(DataSources::OLLAMA) != req.sources.contains(DataSources::OLLAMA);
+        if codex_changed {
+            st.subscription_generations[0] += 1;
+            st.codex = SubscriptionUsage::default();
+        }
+        if ollama_changed {
+            st.subscription_generations[1] += 1;
+            st.ollama = SubscriptionUsage::default();
+        }
         st.req = req;
         st.generation += 1;
         if claude_changed {
@@ -110,11 +141,18 @@ impl Collector {
         drop(st);
         self.shared.wake.notify_all();
         self.shared.claude_wake.notify_all();
+        self.shared.subscription_wake.notify_all();
     }
 
     pub fn refresh_claude(&self) {
         self.shared.state.lock().unwrap().claude_refresh = true;
         self.shared.claude_wake.notify_all();
+    }
+
+    pub fn refresh_subscriptions(&self) {
+        self.refresh_claude();
+        self.shared.state.lock().unwrap().subscription_refresh = [true; 2];
+        self.shared.subscription_wake.notify_all();
     }
 
     pub fn take_snapshot(&self) -> Option<Snapshot> {
@@ -125,6 +163,7 @@ impl Collector {
         self.shared.state.lock().unwrap().stop = true;
         self.shared.wake.notify_all();
         self.shared.claude_wake.notify_all();
+        self.shared.subscription_wake.notify_all();
         // The Claude thread may be inside a network request (bounded by WinHTTP timeouts); do not block exit on it.
         if let Some(sampler) = self.threads.drain(..).next() {
             let _ = sampler.join();
@@ -275,6 +314,8 @@ fn sampler(shared: Arc<Shared>) {
         {
             let mut st = shared.state.lock().unwrap();
             snap.claude = st.claude.clone();
+            snap.codex = st.codex.clone();
+            snap.ollama = st.ollama.clone();
             st.snapshot = Some(snap);
         }
         shared.notify_ui();

@@ -133,7 +133,11 @@ impl Flyout {
         let card_h = (96.0 * s).round();
         let gap = (8.0 * s).round();
         let header_h = (36.0 * s).round();
-        let footer_h = (24.0 * s).round();
+        let subscription_rows = [&data.snapshot.codex, &data.snapshot.ollama]
+            .into_iter()
+            .filter(|u| u.status != tm_core::usage::UsageStatus::Disabled)
+            .count();
+        let footer_h = (24.0 * (1 + subscription_rows) as f32 * s).round();
 
         let items: Vec<usize> = data
             .metrics
@@ -226,8 +230,8 @@ impl Flyout {
                 );
             }
 
-            // Footer: Claude account info.
-            let fy = by + bh - pad - footer_h + 6.0 * s;
+            // One footer line per account keeps subscription status readable.
+            let mut fy = by + bh - pad - footer_h + 6.0 * s;
             let claude = &data.snapshot.claude;
             let mut footer = Vec::new();
             if let Some(plan) = &claude.subscription {
@@ -241,6 +245,24 @@ impl Flyout {
             }
             if !footer.is_empty() {
                 c.text_str(&footer.join("  ·  "), &f_small, hx, fy, p.label);
+            }
+            fy += 24.0 * s;
+            for (name, usage) in [("Codex", &data.snapshot.codex), ("Ollama", &data.snapshot.ollama)] {
+                if usage.status == tm_core::usage::UsageStatus::Disabled {
+                    continue;
+                }
+                let mut footer = vec![name.to_string()];
+                if let Some(plan) = &usage.subscription {
+                    footer.push(plan.clone());
+                }
+                if let Some(at) = usage.fetched_at {
+                    footer.push(trf("flyout.updated", &[&tm_core::format::duration(tm_core::time::now_unix() - at)]));
+                }
+                if usage.status != tm_core::usage::UsageStatus::Ok {
+                    footer.push(tr(usage.status.key()).to_string());
+                }
+                c.text_str(&footer.join("  ·  "), &f_small, hx, fy, p.label);
+                fy += 24.0 * s;
             }
         });
         if let Err(e) = result {
@@ -346,7 +368,8 @@ fn draw_card(
     let gy = r.y + pad + 42.0 * s;
     let gh = r.y + r.h - pad - gy;
     let input = TileInput { config, reading, history };
-    let bar_like = matches!(config.kind.def().category, MetricCategory::Claude) || config.kind == MetricKind::DiskSpace;
+    let bar_like = matches!(config.kind.def().category, MetricCategory::Claude | MetricCategory::Codex | MetricCategory::Ollama)
+        || config.kind == MetricKind::DiskSpace;
     if bar_like {
         let bh = 6.0 * s;
         let by = gy + (gh - bh) / 2.0;

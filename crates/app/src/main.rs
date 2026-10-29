@@ -1,4 +1,4 @@
-//! Taskbar Monitor: a Windows taskbar widget for CPU/GPU/RAM/VRAM/network/disk load and Claude Code usage.
+//! Taskbar Monitor: a Windows taskbar widget for system metrics and Claude/Codex/Ollama subscription usage.
 //!
 //! Command line:
 //!   (none) | --autostart      run the widget (single instance)

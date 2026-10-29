@@ -20,6 +20,8 @@ pub struct Settings {
     pub layout: Layout,
     pub tray: Tray,
     pub claude: Claude,
+    pub codex: Codex,
+    pub ollama: Ollama,
     pub hardware: Hardware,
     pub metrics: Vec<MetricConfig>,
 }
@@ -32,6 +34,8 @@ impl Default for Settings {
             layout: Layout::default(),
             tray: Tray::default(),
             claude: Claude::default(),
+            codex: Codex::default(),
+            ollama: Ollama::default(),
             hardware: Hardware::default(),
             metrics: presets::default_metrics(),
         }
@@ -302,6 +306,49 @@ impl Default for Claude {
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
+pub struct Codex {
+    pub enabled: bool,
+    /// Codex CLI auth.json, or its directory. Empty honors CODEX_HOME.
+    pub credentials_path: String,
+    pub poll_interval_secs: u32,
+    pub show_reset_countdown: bool,
+}
+
+impl Default for Codex {
+    fn default() -> Self {
+        Self { enabled: false, credentials_path: String::new(), poll_interval_secs: 120, show_reset_countdown: true }
+    }
+}
+
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct Ollama {
+    pub enabled: bool,
+    /// Empty uses OLLAMA_API_KEY. Stored in plaintext when configured here.
+    pub api_key: String,
+    pub poll_interval_secs: u32,
+    pub show_reset_countdown: bool,
+}
+
+impl std::fmt::Debug for Ollama {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("Ollama")
+            .field("enabled", &self.enabled)
+            .field("api_key", &"<redacted>")
+            .field("poll_interval_secs", &self.poll_interval_secs)
+            .field("show_reset_countdown", &self.show_reset_countdown)
+            .finish()
+    }
+}
+
+impl Default for Ollama {
+    fn default() -> Self {
+        Self { enabled: false, api_key: String::new(), poll_interval_secs: 120, show_reset_countdown: true }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 pub struct Hardware {
     /// GPU temperature/fan/power through the WDDM driver interface (no admin rights required).
     pub gpu_sensors: bool,
@@ -527,6 +574,8 @@ impl Settings {
         if c.usage_endpoint.trim().is_empty() {
             c.usage_endpoint = Claude::default().usage_endpoint;
         }
+        self.codex.poll_interval_secs = self.codex.poll_interval_secs.clamp(60, 3600);
+        self.ollama.poll_interval_secs = self.ollama.poll_interval_secs.clamp(60, 3600);
 
         self.hardware.sensor_interval_ms = self.hardware.sensor_interval_ms.clamp(500, 60_000);
         // Earlier versions stored "busiest" as the `*` adapter.

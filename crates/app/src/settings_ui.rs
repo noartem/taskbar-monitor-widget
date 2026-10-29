@@ -18,6 +18,7 @@ use tm_core::config::{
 use tm_core::i18n::{self, tr, trf};
 use tm_core::metrics::{MetricKind, MetricStyle, SourceType};
 use tm_core::presets;
+use tm_core::usage::{SubscriptionUsage, UsageStatus};
 
 use crate::app::{MAIN_CLASS, SETTINGS_TITLE, WM_APP_RESTART_ELEVATED};
 use crate::{autostart, collector, elevation, theme, util};
@@ -29,17 +30,21 @@ enum Section {
     Layout,
     Metrics,
     Claude,
+    Codex,
+    Ollama,
     Hardware,
     About,
 }
 
 impl Section {
-    const ALL: [Section; 7] = [
+    const ALL: [Section; 9] = [
         Section::General,
         Section::Appearance,
         Section::Layout,
         Section::Metrics,
         Section::Claude,
+        Section::Codex,
+        Section::Ollama,
         Section::Hardware,
         Section::About,
     ];
@@ -51,6 +56,8 @@ impl Section {
             Section::Layout => "set.section.layout",
             Section::Metrics => "set.section.metrics",
             Section::Claude => "set.section.claude",
+            Section::Codex => "set.section.codex",
+            Section::Ollama => "set.section.ollama",
             Section::Hardware => "set.section.hardware",
             Section::About => "set.section.about",
         }
@@ -174,6 +181,8 @@ struct SettingsApp {
     autostart_job: Option<Receiver<Result<bool, String>>>,
     claude_test: Option<Receiver<ClaudeUsage>>,
     claude_result: Option<ClaudeUsage>,
+    subscription_tests: [Option<Receiver<SubscriptionUsage>>; 2],
+    subscription_results: [Option<SubscriptionUsage>; 2],
     elevated: bool,
     status: Option<(String, Instant)>,
     confirm_reset: bool,
@@ -245,6 +254,8 @@ impl SettingsApp {
             autostart_job: None,
             claude_test: None,
             claude_result: None,
+            subscription_tests: [None, None],
+            subscription_results: [None, None],
             elevated: elevation::is_elevated(),
             status: None,
             confirm_reset: false,
@@ -364,6 +375,14 @@ impl SettingsApp {
         {
             self.claude_test = None;
             self.claude_result = Some(result);
+        }
+        for index in 0..2 {
+            if let Some(rx) = &self.subscription_tests[index]
+                && let Ok(result) = rx.try_recv()
+            {
+                self.subscription_tests[index] = None;
+                self.subscription_results[index] = Some(result);
+            }
         }
     }
 
@@ -934,6 +953,97 @@ impl SettingsApp {
         }
     }
 
+    fn subscription(&mut self, ui: &mut egui::Ui, codex: bool) {
+        let index = if codex { 0 } else { 1 };
+        let focus = self.focus.clone();
+        let (hint, enabled_key, credentials_key) = if codex {
+            ("set.codex.hint", "set.codex.enabled", "set.codex.credentials")
+        } else {
+            ("set.ollama.hint", "set.ollama.enabled", "set.ollama.key")
+        };
+        ui.label(RichText::new(tr(hint)).weak());
+        ui.add_space(6.0);
+        let (enabled, credential, interval, countdown) = if codex {
+            let c = &mut self.settings.codex;
+            (&mut c.enabled, &mut c.credentials_path, &mut c.poll_interval_secs, &mut c.show_reset_countdown)
+        } else {
+            let c = &mut self.settings.ollama;
+            (&mut c.enabled, &mut c.api_key, &mut c.poll_interval_secs, &mut c.show_reset_countdown)
+        };
+        let enabled_response = ui.checkbox(enabled, tr(enabled_key));
+        mark(&focus, enabled_key, &enabled_response);
+        let mut changed = enabled_response.changed();
+        ui.label(tr(credentials_key));
+        let default =
+            if codex { tm_core::codex::resolve_credentials_path("").display().to_string() } else { "OLLAMA_API_KEY".into() };
+        let response = ui.add(TextEdit::singleline(credential).password(!codex).hint_text(&default).desired_width(380.0));
+        mark(&focus, credentials_key, &response);
+        changed |= response.changed();
+        if codex {
+            let path = tm_core::codex::resolve_credentials_path(credential);
+            ui.label(RichText::new(path.display().to_string()).small());
+        }
+        ui.label(tr("set.claude.interval"));
+        changed |= ui.add(Slider::new(interval, 60..=900).suffix(" s")).changed();
+        changed |= ui.checkbox(countdown, tr("set.claude.countdown")).changed();
+        if changed {
+            // A result fetched for a different account/key must not remain visible.
+            self.subscription_tests[index] = None;
+            self.subscription_results[index] = None;
+        }
+        ui.add_space(8.0);
+        let busy = self.subscription_tests[index].is_some();
+        if ui.add_enabled(!busy, egui::Button::new(tr("set.claude.test"))).clicked() {
+            let (tx, rx) = channel();
+            let ctx = ui.ctx().clone();
+            if codex {
+                let cfg = self.settings.codex.clone();
+                std::thread::spawn(move || {
+                    let _ = tx.send(collector::codex::fetch(&cfg).0);
+                    ctx.request_repaint();
+                });
+            } else {
+                let cfg = self.settings.ollama.clone();
+                std::thread::spawn(move || {
+                    let _ = tx.send(collector::ollama::fetch(&cfg).0);
+                    ctx.request_repaint();
+                });
+            }
+            self.subscription_tests[index] = Some(rx);
+        }
+        if busy {
+            ui.spinner();
+        }
+        if let Some(result) = &self.subscription_results[index] {
+            ui.label(tr(result.status.key()));
+            if result.status == UsageStatus::Ok {
+                if let Some(plan) = &result.subscription {
+                    ui.label(trf("flyout.plan", &[plan]));
+                }
+                if result.limits.is_empty() {
+                    ui.label(tr("usage.not_available"));
+                }
+                for limit in &result.limits {
+                    ui.horizontal(|ui| {
+                        ui.label(tr(&format!("usage.{}", limit.key)));
+                        ui.label(format!("{:.1}%", limit.utilization));
+                        if let Some(at) = limit.resets_at {
+                            ui.label(trf(
+                                "flyout.resets",
+                                &[&tm_core::format::duration((at - tm_core::time::now_unix()).max(0))],
+                            ));
+                        }
+                    });
+                    if let Some(detail) = &limit.detail {
+                        ui.label(detail);
+                    }
+                }
+            } else if let Some(error) = &result.error {
+                ui.label(error);
+            }
+        }
+    }
+
     fn hardware(&mut self, ui: &mut egui::Ui) {
         let focus = self.focus.clone();
         let sources = self.sources.lock().unwrap().clone();
@@ -1195,6 +1305,10 @@ const SEARCH_INDEX: &[(Section, &str)] = &[
     (Section::Claude, "set.claude.interval"),
     (Section::Claude, "set.claude.countdown"),
     (Section::Claude, "set.claude.endpoint"),
+    (Section::Codex, "set.codex.enabled"),
+    (Section::Codex, "set.codex.credentials"),
+    (Section::Ollama, "set.ollama.enabled"),
+    (Section::Ollama, "set.ollama.key"),
     (Section::Hardware, "set.hw.gpu_sensors"),
     (Section::Hardware, "set.hw.thermal"),
     (Section::Hardware, "set.hw.lhm"),
@@ -1256,6 +1370,11 @@ fn tr_key_static(kind: MetricKind) -> &'static str {
         MetricKind::ClaudeWeekly => "kind.claude_weekly",
         MetricKind::ClaudeModel => "kind.claude_model",
         MetricKind::ClaudeExtra => "kind.claude_extra",
+        MetricKind::CodexSession => "kind.codex_session",
+        MetricKind::CodexWeekly => "kind.codex_weekly",
+        MetricKind::OllamaMonthly => "kind.ollama_monthly",
+        MetricKind::OllamaSession => "kind.ollama_session",
+        MetricKind::OllamaWeekly => "kind.ollama_weekly",
         MetricKind::Sensor => "kind.sensor",
     }
 }
@@ -1335,7 +1454,11 @@ impl eframe::App for SettingsApp {
         }
         self.apply_theme(&ctx);
         self.poll_jobs();
-        if self.autostart_job.is_some() || self.claude_test.is_some() || self.focus.active() {
+        if self.autostart_job.is_some()
+            || self.claude_test.is_some()
+            || self.subscription_tests.iter().any(Option::is_some)
+            || self.focus.active()
+        {
             ctx.request_repaint_after(Duration::from_millis(100));
         }
 
@@ -1395,6 +1518,8 @@ impl eframe::App for SettingsApp {
                 Section::Layout => self.layout(ui),
                 Section::Metrics => self.metrics(ui),
                 Section::Claude => self.claude(ui),
+                Section::Codex => self.subscription(ui, true),
+                Section::Ollama => self.subscription(ui, false),
                 Section::Hardware => self.hardware(ui),
                 Section::About => self.about(ui),
             });

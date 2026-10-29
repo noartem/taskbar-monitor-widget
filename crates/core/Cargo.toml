@@ -1,6 +1,6 @@
 [package]
 name = "tm-core"
-description = "Platform independent core of Taskbar Monitor: settings, metric model, formatting, Claude usage parsing"
+description = "Platform independent core of Taskbar Monitor: settings, metric model, formatting, subscription usage parsing"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

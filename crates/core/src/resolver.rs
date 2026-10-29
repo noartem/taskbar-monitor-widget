@@ -6,6 +6,7 @@ use crate::format;
 use crate::metrics::{MetricKind, SourceType};
 use crate::snapshot::{DiskInfo, GpuInfo, Snapshot};
 use crate::time::now_unix;
+use crate::usage::{SubscriptionUsage, UsageStatus};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct Reading {
@@ -20,7 +21,7 @@ pub struct Reading {
     pub detail: Option<String>,
     /// Device the value came from (GPU, adapter, disk…).
     pub source_name: Option<String>,
-    /// Seconds until a Claude limit resets.
+    /// Seconds until a subscription limit resets.
     pub resets_in: Option<i64>,
     /// i18n key explaining why data is missing or stale.
     pub status: Option<&'static str>,
@@ -205,6 +206,17 @@ pub fn resolve(config: &MetricConfig, snap: &Snapshot, settings: &Settings) -> R
             }
             _ => Reading::unavailable(label, Some(claude_status_key(&snap.claude))),
         },
+        MetricKind::CodexSession => subscription_reading(label, &snap.codex, "session", dec, settings.codex.show_reset_countdown),
+        MetricKind::CodexWeekly => subscription_reading(label, &snap.codex, "weekly", dec, settings.codex.show_reset_countdown),
+        MetricKind::OllamaMonthly => {
+            subscription_reading(label, &snap.ollama, "monthly", dec, settings.ollama.show_reset_countdown)
+        }
+        MetricKind::OllamaSession => {
+            subscription_reading(label, &snap.ollama, "session", dec, settings.ollama.show_reset_countdown)
+        }
+        MetricKind::OllamaWeekly => {
+            subscription_reading(label, &snap.ollama, "weekly", dec, settings.ollama.show_reset_countdown)
+        }
         MetricKind::Sensor => match snap.sensors.get(&config.source) {
             Some(s) => {
                 let fraction = if s.unit == "%" {
@@ -246,6 +258,25 @@ fn claude_reading(label: String, usage: &ClaudeUsage, limit: Option<&ClaudeLimit
         r.detail = r.resets_in.map(|s| format!("↻ {}", format::duration(s)));
     }
     r.status = usage.is_stale().then_some("claude.stale");
+    r
+}
+
+fn subscription_reading(label: String, usage: &SubscriptionUsage, key: &str, dec: i32, countdown: bool) -> Reading {
+    let Some(limit) = usage.get(key) else {
+        let status = if usage.status == UsageStatus::Ok { "usage.not_available" } else { usage.status.key() };
+        return Reading::unavailable(label, Some(status));
+    };
+    let mut r = Reading::percent(label, limit.utilization, dec, None);
+    r.resets_in = limit.resets_at.map(|at| (at - now_unix()).max(0));
+    r.detail = limit.detail.clone();
+    if countdown && let Some(seconds) = r.resets_in {
+        let reset = format!("↻ {}", format::duration(seconds));
+        r.detail = Some(match r.detail {
+            Some(detail) => format!("{detail} · {reset}"),
+            None => reset,
+        });
+    }
+    r.status = usage.is_stale().then_some("usage.stale");
     r
 }
 

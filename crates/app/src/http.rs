@@ -1,9 +1,10 @@
 //! Minimal HTTPS GET over WinHTTP: system TLS, system proxy settings, no extra dependencies.
 
 use windows::Win32::Networking::WinHttp::{
-    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_FLAG_SECURE, WINHTTP_OPEN_REQUEST_FLAGS, WINHTTP_QUERY_FLAG_NUMBER,
-    WINHTTP_QUERY_RETRY_AFTER, WINHTTP_QUERY_STATUS_CODE, WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest,
-    WinHttpQueryHeaders, WinHttpReadData, WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetTimeouts,
+    WINHTTP_ACCESS_TYPE_AUTOMATIC_PROXY, WINHTTP_DISABLE_REDIRECTS, WINHTTP_FLAG_SECURE, WINHTTP_OPEN_REQUEST_FLAGS,
+    WINHTTP_OPTION_DISABLE_FEATURE, WINHTTP_QUERY_FLAG_NUMBER, WINHTTP_QUERY_RETRY_AFTER, WINHTTP_QUERY_STATUS_CODE,
+    WinHttpCloseHandle, WinHttpConnect, WinHttpOpen, WinHttpOpenRequest, WinHttpQueryHeaders, WinHttpReadData,
+    WinHttpReceiveResponse, WinHttpSendRequest, WinHttpSetOption, WinHttpSetTimeouts,
 };
 use windows::core::{HSTRING, PCWSTR};
 
@@ -72,6 +73,10 @@ pub fn get(url: &str, headers: &[(&str, &str)], user_agent: &str) -> Result<Resp
             ),
             "WinHttpOpenRequest",
         )?;
+        // Usage requests carry credentials: never forward them to a redirect target.
+        let disabled = WINHTTP_DISABLE_REDIRECTS.to_ne_bytes();
+        WinHttpSetOption(Some(request.0.cast_const()), WINHTTP_OPTION_DISABLE_FEATURE, Some(&disabled))
+            .map_err(|e| format!("redirect policy: {}", e.message()))?;
 
         let header_text: String = headers.iter().map(|(k, v)| format!("{k}: {v}\r\n")).collect();
         let header_wide: Vec<u16> = header_text.encode_utf16().collect();
