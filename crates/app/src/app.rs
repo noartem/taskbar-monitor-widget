@@ -418,9 +418,9 @@ impl App {
     }
 
     fn widget_visible(&self, w: &Widget) -> bool {
-        !self.user_hidden
-            && !w.taskbar.hidden
-            && !(self.settings.layout.hide_on_fullscreen && taskbar::fullscreen_on(w.taskbar.monitor, w.taskbar.monitor_rect))
+        !(self.user_hidden
+            || w.taskbar.hidden
+            || self.settings.layout.hide_on_fullscreen && taskbar::fullscreen_on(w.taskbar.monitor, w.taskbar.monitor_rect))
     }
 
     fn render(&mut self) {
@@ -704,10 +704,8 @@ impl App {
             }
             tray::CMD_AUTOSTART_OFF => self.set_autostart(Autostart::Off),
             tray::CMD_AUTOSTART_USER => self.set_autostart(Autostart::User),
-            tray::CMD_AUTOSTART_ELEVATED => {
-                if self.elevated || util::confirm(tr("dlg.elevated_autostart")) {
-                    self.set_autostart(Autostart::Elevated);
-                }
+            tray::CMD_AUTOSTART_ELEVATED if self.elevated || util::confirm(tr("dlg.elevated_autostart")) => {
+                self.set_autostart(Autostart::Elevated);
             }
             tray::CMD_RESTART_ADMIN => self.restart_elevated(),
             tray::CMD_REFRESH_USAGE => self.collector.refresh_subscriptions(),

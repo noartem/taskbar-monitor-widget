@@ -23,26 +23,21 @@ pub fn parse_usage(json: &str, fetched_at: i64) -> Result<SubscriptionUsage, Str
     let mut limits = Vec::new();
     if let (Some(balance), Some(allowance)) =
         (included.get("balance_usd").and_then(number), included.get("allowance_usd").and_then(number))
+        && allowance > 0.0
     {
-        if allowance > 0.0 {
-            let used = allowance - balance;
-            let utilization = used / allowance * 100.0;
-            if utilization.is_finite() {
-                let mut detail = format!("${used:.2} / ${allowance:.2} used");
-                if let Some(purchased) = purchased {
-                    detail.push_str(&format!("; ${purchased:.2} purchased remaining"));
-                }
-                limits.push(UsageLimit {
-                    key: MONTHLY_KEY,
-                    utilization,
-                    resets_at: included
-                        .get("period")
-                        .and_then(|v| v.get("until"))
-                        .and_then(Value::as_str)
-                        .and_then(parse_rfc3339),
-                    detail: Some(detail),
-                });
+        let used = allowance - balance;
+        let utilization = used / allowance * 100.0;
+        if utilization.is_finite() {
+            let mut detail = format!("${used:.2} / ${allowance:.2} used");
+            if let Some(purchased) = purchased {
+                detail.push_str(&format!("; ${purchased:.2} purchased remaining"));
             }
+            limits.push(UsageLimit {
+                key: MONTHLY_KEY,
+                utilization,
+                resets_at: included.get("period").and_then(|v| v.get("until")).and_then(Value::as_str).and_then(parse_rfc3339),
+                detail: Some(detail),
+            });
         }
     }
     for key in [SESSION_KEY, WEEKLY_KEY] {
